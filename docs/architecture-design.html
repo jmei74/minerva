@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信用卡核心系统技术架构设计</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --text: #e8eaf0;
+    --text-muted: #8892b0;
+    --accent: #5b8dee;
+    --accent-dim: #3a4f8a;
+    --green: #4ecb8d;
+    --yellow: #f0c040;
+    --red: #e06c75;
+    --code-bg: #111320;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── sidebar nav ── */
+  #sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 240px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px 0 40px;
+    z-index: 100;
+  }
+  #sidebar .logo {
+    padding: 0 20px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  #sidebar .nav-section {
+    padding: 0 12px;
+    margin-bottom: 4px;
+  }
+  #sidebar .nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 10px 8px 4px;
+  }
+  #sidebar a {
+    display: block;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: background 0.15s, color 0.15s;
+  }
+  #sidebar a:hover, #sidebar a.active {
+    background: var(--surface2);
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* ── main content ── */
+  #main {
+    margin-left: 240px;
+    max-width: 860px;
+    padding: 48px 48px 100px;
+  }
+
+  /* ── hero ── */
+  .hero {
+    margin-bottom: 48px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .hero h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .hero .meta {
+    display: flex;
+    gap: 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+  .hero .meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* ── sections ── */
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 40px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 24px 0 10px;
+  }
+  h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 16px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  p { margin-bottom: 12px; color: var(--text); }
+
+  /* ── principle cards ── */
+  .principle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .principle-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+  .principle-card .name {
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .principle-card .desc { color: var(--text-muted); font-size: 12px; }
+
+  /* ── tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface);
+    color: var(--accent);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--border);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+  }
+  tr:hover td { background: var(--surface); }
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--green);
+  }
+
+  /* ── code blocks ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre;
+  }
+  pre .comment { color: var(--text-muted); }
+  pre .keyword { color: var(--accent); font-weight: 600; }
+  pre .string { color: var(--green); }
+  pre .number { color: var(--yellow); }
+  pre .type { color: #c678dd; }
+
+  /* ── arch diagram ── */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px 0 24px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.4;
+    white-space: pre;
+    color: var(--text);
+  }
+
+  /* ── adr ── */
+  .adr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin: 12px 0 20px;
+  }
+  .adr-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 12px;
+  }
+  .adr-card .id {
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+  .adr-card .decision { color: var(--text); margin-bottom: 6px; font-weight: 500; }
+  .adr-card .reason { color: var(--text-muted); margin-bottom: 4px; }
+  .adr-card .risk { color: var(--yellow); font-size: 11px; }
+
+  /* ── stats ── */
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 16px 0 24px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    min-width: 120px;
+  }
+  .stat .val { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .stat .label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 16px 0 32px;
+    font-size: 13px;
+  }
+  .toc h4 { color: var(--accent); margin-bottom: 10px; font-size: 13px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 4px; }
+  .toc a { color: var(--text-muted); }
+  .toc a:hover { color: var(--accent); }
+
+  /* ── tag ── */
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-green { background: rgba(78,203,141,0.15); color: var(--green); }
+  .tag-yellow { background: rgba(240,192,64,0.15); color: var(--yellow); }
+  .tag-red { background: rgba(224,108,117,0.15); color: var(--red); }
+
+  /* ── scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 768px) {
+    #sidebar { display: none; }
+    #main { margin-left: 0; padding: 24px 20px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- sidebar -->
+<nav id="sidebar">
+  <div class="logo">🏦 信用卡核心系统</div>
+  <div class="nav-section">
+    <a class="nav-label">📋 概览</a>
+    <a href="#meta">项目信息</a>
+    <a href="#principles">架构原则</a>
+  </div>
+  <div class="nav-section">
+    <a class="nav-label">🏗️ 架构</a>
+    <a href="#arch">分层架构</a>
+    <a href="#services">微服务边界</a>
+    <a href="#comm">服务间通信</a>
+  </div>
+  <div class="nav-section">
+    <a class="nav-label">💾 数据层</a>
+    <a href="#db">数据库设计</a>
+    <a href="#redis">Redis 缓存</a>
+    <a href="#kafka">Kafka 事件</a>
+  </div>
+  <div class="nav-section">
+    <a class="nav-label">🌐 网关 & 安全</a>
+    <a href="#gateway">API 网关</a>
+    <a href="#security">PCI-DSS 合规</a>
+  </div>
+  <div class="nav-section">
+    <a class="nav-label">📊 其他</a>
+    <a href="#adr">ADR 技术决策</a>
+    <a href="#deploy">部署架构</a>
+    <a href="#perf">性能预算</a>
+  </div>
+</nav>
+
+<!-- main -->
+<div id="main">
+
+<div class="hero">
+  <div class="badge">v1.0 · 初稿</div>
+  <h1>信用卡核心系统<br>技术架构设计</h1>
+  <div class="meta">
+    <span>✍️ 小宗（架构师）</span>
+    <span>📅 2025-05-31</span>
+    <span>📁 基于 PRD v1.0</span>
+    <span>🏷️ Spring Boot · PostgreSQL · Redis · Kafka · Kong</span>
+  </div>
+</div>
+
+<!-- stats -->
+<div class="stats-row">
+  <div class="stat"><div class="val">9</div><div class="label">数据库表</div></div>
+  <div class="stat"><div class="val">4</div><div class="label">Kafka Topic</div></div>
+  <div class="stat"><div class="val">7</div><div class="label">微服务</div></div>
+  <div class="stat"><div class="val">7</div><div class="label">ADR 决策</div></div>
+  <div class="stat"><div class="val">≤100ms</div><div class="label">授权 P99 目标</div></div>
+</div>
+
+<!-- principles -->
+<h2 id="principles">1. 架构设计原则</h2>
+<div class="principle-grid">
+  <div class="principle-card"><div class="name">强一致性优先</div><div class="desc">账务数据零差错，TPS ≥ 3000 可用异步写流水 + 幂等补偿实现</div></div>
+  <div class="principle-card"><div class="name">安全红线不妥协</div><div class="desc">PCI-DSS 合规贯穿所有层级，从数据加密到日志脱敏</div></div>
+  <div class="principle-card"><div class="name">最小可行架构</div><div class="desc">不引入过度设计，Phase 1 验证后再迭代</div></div>
+  <div class="principle-card"><div class="name">性能有数据再动</div><div class="desc">瓶颈定位后才优化，避免 premature optimization</div></div>
+</div>
+
+<!-- arch -->
+<h2 id="arch">2. 分层架构总览</h2>
+<div class="arch-diagram">┌────────────────────────────────────────────────────────────────────────────┐
+│                         接入层（Gateway Layer）                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │  Kong API    │  │ Kafka        │  │  XXL-Job     │  │  OpenAPI /        │  │
+│  │  Gateway     │  │ Consumer     │  │  Scheduler   │  │  Webhook          │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘  │
+└─────────┼────────────────┼─────────────────┼────────────────────┼──────────────┘
+          │                │                 │                    │
+┌─────────▼────────────────▼────────────────▼────────────────────▼──────────┐
+│                            服  务  层（Service Layer）                        │
+│  ┌─────────────────┐  ┌──────────────────┐  ┌────────────────────────┐       │
+│  │  Account Svc    │  │ Transaction Svc  │  │  Billing Svc         │       │
+│  │  账户管理服务    │  │ 交易处理服务       │  │  账单服务             │       │
+│  │  ★ 开卡/销户   │  │ ★ 消费/授权      │  │  ★ 账单生成(批量)   │       │
+│  │  ★ 额度管理    │  │ ★ 还款/退货      │  │  ★ 利息/滞纳金计算   │       │
+│  │  ★ 账户状态    │  │ ★ 冲正/撤销      │  │  ★ 最低还款额计算    │       │
+│  └────────┬────────┘  └────────┬────────┘  └──────────┬───────────┘       │
+│           │                    │                     │                   │
+│  ┌────────▼────────────────────▼─────────────────────▼──────────────┐      │
+│  │                      公 共 能 力 层                             │      │
+│  │  Credit Engine（额度引擎） │ Pricing Engine（定价引擎） │ Event Bus │     │
+│  │  额度计算/扣减/释放/预授权  │ 手续费/利息/滞纳金/分期费   │ Kafka   │     │
+│  └───────────────────────────────────────────────────────────────┘      │
+└────────────────────────────────────────────────────────────────────┘
+          │
+┌─────────▼───────────────────────────────────────────────────────────────┐
+│                            数  据  层                                  │
+│  PostgreSQL 16（账务核心） │ Redis Cluster 7.x（额度快照）│ Kafka 3.x │ │
+│  主从 + 读写分离           │ 3 主 3 从                   │ 多副本+ISR │ │
+│  可选：MongoDB（审计日志）  │ 可选：ES（日终报表检索）    │            │ │
+└──────────────────────────────────────────────────────────────────────────┘</div>
+
+<!-- services -->
+<h2 id="services">3. 微服务职责边界</h2>
+
+<h3>3.1 Account Service（账户管理服务）</h3>
+<table>
+  <tr><th>模块</th><th>说明</th></tr>
+  <tr><td>AccountController</td><td>开卡 / 销户 / 账户查询 / 状态变更</td></tr>
+  <tr><td>LimitManager</td><td>永久额度 / 临时额度调整（含审批流触发）</td></tr>
+  <tr><td>AccountStatusMachine</td><td>状态机：PENDING → ACTIVE → FROZEN → CLOSED</td></tr>
+</table>
+<p><strong>API：</strong>
+  <code>POST /api/v1/accounts</code> 创建账户 ·
+  <code>GET /api/v1/accounts/{id}</code> 查询 ·
+  <code>PUT /api/v1/accounts/{id}/limit</code> 额度调整 ·
+  <code>PUT /api/v1/accounts/{id}/status</code> 状态变更
+</p>
+
+<h3>3.2 Transaction Service（交易处理服务）</h3>
+<table>
+  <tr><th>模块</th><th>说明</th></tr>
+  <tr><td>AuthorizationHandler</td><td>联机授权 / 预授权 / 授权完成 / 授权撤销</td></tr>
+  <tr><td>TransactionProcessor</td><td>消费确认 / 还款 / 退货 / 冲正</td></tr>
+  <tr><td>IdempotencyManager</td><td>幂等键管理（防重复扣款）</td></tr>
+</table>
+<p><strong>核心链路约束：</strong>P99 &lt; 100ms，先查 Redis 额度 → 乐观锁更新 DB → 异步写 Kafka</p>
+
+<h3>3.3 Billing Service（账单服务）</h3>
+<table>
+  <tr><th>模块</th><th>说明</th></tr>
+  <tr><td>StatementGenerator</td><td>批量账单生成（XXL-Job 触发，10 万账户 &lt; 30 分钟）</td></tr>
+  <tr><td>InterestCalculator</td><td>全额计息 / 分期计息（配置化，支持热更新）</td></tr>
+  <tr><td>LateFeeProcessor</td><td>滞纳金计算</td></tr>
+</table>
+
+<h3>3.4 公共能力层</h3>
+<table>
+  <tr><th>组件</th><th>核心职责</th></tr>
+  <tr><td>Credit Engine</td><td>可用额度 = 固定+临时-已用-冻结；实时计算 / 扣减 / 释放 / 预授权管理</td></tr>
+  <tr><td>Pricing Engine</td><td>取现手续费、利息（全额从消费日起）、滞纳金、分期手续费</td></tr>
+  <tr><td>Event Bus</td><td>Kafka Producer / 消息路由</td></tr>
+</table>
+
+<!-- comm -->
+<h2 id="comm">4. 服务间通信方案</h2>
+<table>
+  <tr><th>场景</th><th>方式</th><th>理由</th></tr>
+  <tr><td>实时授权决策</td><td><span class="tag tag-green">同步 REST/gRPC</span></td><td>100ms 内需响应</td></tr>
+  <tr><td>交易流水落库</td><td><span class="tag tag-yellow">异步 Kafka</span></td><td>高并发写入，削峰填谷</td></tr>
+  <tr><td>批量任务触发</td><td><span class="tag tag-yellow">异步 XXL-Job → Kafka</span></td><td>账单/计息按批次</td></tr>
+  <tr><td>跨服务状态同步</td><td><span class="tag tag-yellow">异步 Kafka Event</span></td><td>账户状态变更通知下游</td></tr>
+  <tr><td>超时敏感场景</td><td><span class="tag tag-green">Hystrix / Sentinel 熔断</span></td><td>下游不可用时降级</td></tr>
+</table>
+<p><strong>Kafka Topics：</strong>
+  <code>credit-card.transaction.events</code>（交易事件） ·
+  <code>credit-card.account.events</code>（账户事件） ·
+  <code>credit-card.billing.events</code>（账单事件） ·
+  <code>credit-card.credit.events</code>（额度事件） ·
+  <code>credit-card.dlq</code>（死信队列）
+</p>
+
+<!-- db -->
+<h2 id="db">5. 数据库表结构设计</h2>
+<p>共 <strong>9 张表</strong>，PostgreSQL 16，主从 + 读写分离。</p>
+<table>
+  <tr><th>表名</th><th>用途</th><th>关键设计</th></tr>
+  <tr><td><code>account</code></td><td>信用卡账户</td><td>可用额度计算字段（GENERATED STORED），乐观锁 version，card_no AES-256 加密</td></tr>
+  <tr><td><code>transaction</code></td><td>交易流水</td><td>idempotency_key UNIQUE 防重复，auth_code 索引（WHERE NOT NULL）</td></tr>
+  <tr><td><code>authorization</code></td><td>授权记录</td><td>预授权 / 授权完成，expire_time 索引清理过期预授权</td></tr>
+  <tr><td><code>installment</code></td><td>分期记录</td><td>消费分期 + 账单分期，覆盖分期本金 / 期数 / 手续费率</td></tr>
+  <tr><td><code>installment_schedule</code></td><td>分期还款计划</td><td>UNIQUE(inst_id, period)，due_date 索引批量扣款</td></tr>
+  <tr><td><code>bill</code></td><td>账单</td><td>UNIQUE(account_id, bill_month)，含上期最低额未还字段</td></tr>
+  <tr><td><code>bill_item</code></td><td>账单明细</td><td>关联交易流水，含消费日期/商户/金额</td></tr>
+  <tr><td><code>credit_limit_adjustment</code></td><td>额度调整记录</td><td>审批流 ID，PERMANENT / TEMP 类型</td></tr>
+  <tr><td><code>audit_log</code></td><td>操作审计</td><td>按月分区（PARTITION BY RANGE），保留 7 年（84 个分区）</td></tr>
+</table>
+
+<pre><span class="comment">-- 账户表（含可用额度计算字段 + 乐观锁）</span>
+<span class="keyword">CREATE TABLE</span> account (
+    account_id          <span class="type">UUID</span> PRIMARY KEY,
+    customer_id         <span class="type">UUID</span> NOT NULL,
+    card_no_encrypted   <span class="type">VARCHAR(256)</span> NOT NULL,      <span class="comment">-- AES-256 加密存储</span>
+    card_no_last4       <span class="type">CHAR(4)</span> NOT NULL,            <span class="comment">-- 仅后 4 位明文</span>
+    credit_limit        <span class="type">DECIMAL(15,2)</span> NOT NULL,
+    temp_limit          <span class="type">DECIMAL(15,2)</span> NOT NULL DEFAULT <span class="number">0</span>,
+    used_amount         <span class="type">DECIMAL(15,2)</span> NOT NULL DEFAULT <span class="number">0</span>,
+    frozen_amount       <span class="type">DECIMAL(15,2)</span> NOT NULL DEFAULT <span class="number">0</span>,
+    available_amount    <span class="type">DECIMAL(15,2)</span> GENERATED ALWAYS <span class="keyword">AS</span> (
+                            credit_limit + temp_limit - used_amount - frozen_amount
+                        ) STORED,
+    over_limit_ratio    <span class="type">DECIMAL(5,4)</span> NOT NULL DEFAULT <span class="number">0.1000</span>,
+    status              <span class="type">VARCHAR(20)</span> DEFAULT <span class="string">'ACTIVE'</span>,
+    version             <span class="type">BIGINT</span> NOT NULL DEFAULT <span class="number">0</span>,   <span class="comment">-- 乐观锁</span>
+    open_date           <span class="type">DATE</span> NOT NULL,
+    created_at          <span class="type">TIMESTAMP</span> NOT NULL DEFAULT NOW(),
+    updated_at          <span class="type">TIMESTAMP</span> NOT NULL DEFAULT NOW()
+);</pre>
+
+<pre><span class="comment">-- 分期表（补全 PRD 中缺失的实体）</span>
+<span class="keyword">CREATE TABLE</span> installment (
+    installment_id       <span class="type">UUID</span> PRIMARY KEY,
+    account_id           <span class="type">UUID</span> NOT NULL REFERENCES account(account_id),
+    installment_type    <span class="type">VARCHAR(20)</span> CHECK (installment_type <span class="keyword">IN</span> (<span class="string">'PURCHASE'</span>, <span class="string">'BILL'</span>)),
+    principal           <span class="type">DECIMAL(15,2)</span> NOT NULL,         <span class="comment">-- 分期本金</span>
+    total_installments  <span class="type">SMALLINT</span> NOT NULL,            <span class="comment">-- 总期数</span>
+    completed_installments <span class="type">SMALLINT</span> DEFAULT <span class="number">0</span>,
+    installment_amount  <span class="type">DECIMAL(15,2)</span> NOT NULL,      <span class="comment">-- 每期还款金额</span>
+    fee_rate            <span class="type">DECIMAL(5,4)</span> NOT NULL,          <span class="comment">-- 手续费率（月）</span>
+    total_fee           <span class="type">DECIMAL(15,2)</span> NOT NULL,       <span class="comment">-- 总手续费</span>
+    monthly_payment     <span class="type">DECIMAL(15,2)</span> NOT NULL,      <span class="comment">-- 每月应还（本金+手续费）</span>
+    first_due_date      <span class="type">DATE</span> NOT NULL,
+    status              <span class="type">VARCHAR(20)</span> DEFAULT <span class="string">'ACTIVE'</span>,
+    start_date          <span class="type">DATE</span> NOT NULL,
+    created_at          <span class="type">TIMESTAMP</span> DEFAULT NOW()
+);</pre>
+
+<!-- redis -->
+<h2 id="redis">6. Redis 缓存策略</h2>
+<table>
+  <tr><th>Key Pattern</th><th>类型</th><th>TTL</th><th>用途</th></tr>
+  <tr><td><code>credit:snapshot:{account_id}</code></td><td>Hash</td><td>5s</td><td>额度快照（实时性要求高）</td></tr>
+  <tr><td><code>credit:available:{account_id}</code></td><td>String</td><td>5s</td><td>可用额度计算值</td></tr>
+  <tr><td><code>auth:idempotency:{key}</code></td><td>String</td><td>24h</td><td>幂等键（防重复扣款）</td></tr>
+  <tr><td><code>auth:pending:{auth_code}</code></td><td>Hash</td><td>30d</td><td>预授权信息</td></tr>
+  <tr><td><code>lock:account:{account_id}</code></td><td>String</td><td>10s</td><td>分布式锁（额度更新）</td></tr>
+  <tr><td><code>rate:limit:{client_id}</code></td><td>String</td><td>1min</td><td>令牌桶限流计数器</td></tr>
+</table>
+<p><strong>额度快照一致性：</strong>Cache-Aside 模式，Redis 与 DB 不一致时以 DB 为准。TTL 5s 强制回源。</p>
+
+<!-- kafka -->
+<h2 id="kafka">7. Kafka 事件清单</h2>
+<table>
+  <tr><th>Topic</th><th>分区</th><th>保留</th><th>说明</th></tr>
+  <tr><td><code>credit-card.transaction.events</code></td><td>32</td><td>7 天</td><td>消费 / 退货 / 授权事件</td></tr>
+  <tr><td><code>credit-card.account.events</code></td><td>16</td><td>7 天</td><td>开卡 / 销户 / 状态变更</td></tr>
+  <tr><td><code>credit-card.billing.events</code></td><td>16</td><td>30 天</td><td>账单生成 / 计息</td></tr>
+  <tr><td><code>credit-card.credit.events</code></td><td>16</td><td>7 天</td><td>额度调整 / 占用 / 释放</td></tr>
+  <tr><td><code>credit-card.dlq</code></td><td>4</td><td>30 天</td><td>死信队列（处理失败消息）</td></tr>
+</table>
+
+<!-- gateway -->
+<h2 id="gateway">8. API 网关设计方案</h2>
+<table>
+  <tr><th>组件</th><th>选型</th><th>说明</th></tr>
+  <tr><td>网关</td><td><strong>Kong</strong>（Nginx + Lua）</td><td>性能优于 Java Gateway，插件生态丰富</td></tr>
+  <tr><td>JWT 鉴权</td><td>Kong JWT plugin</td><td>令牌包含 sub / client_id / permissions</td></tr>
+  <tr><td>限流</td><td>令牌桶 + Redis</td><td>全局 10k/s；授权接口 500/min；幂等键校验 100/min</td></tr>
+  <tr><td>卡号脱敏</td><td>Kong transformer plugin</td><td>日志 / 响应中禁止明文卡号，掩码展示 <code>**** **** **** 1234</code></td></tr>
+  <tr><td>链路追踪</td><td>SkyWalking + Kong correlation-id</td><td>全链路 trace_id 透传</td></tr>
+  <tr><td>服务发现</td><td>Consul</td><td>微服务注册 / 注销 / 健康检查</td></tr>
+</table>
+
+<!-- security -->
+<h2 id="security">9. 安全设计（PCI-DSS 合规）</h2>
+<table>
+  <tr><th>控制项</th><th>实现措施</th></tr>
+  <tr><td>数据加密</td><td>card_no：AES-256-CBC（KMS 管理密钥，90 天轮转）</td></tr>
+  <tr><td>传输加密</td><td>全链路 TLS 1.3（Gateway → Service → DB/Redis/Kafka）</td></tr>
+  <tr><td>访问控制</td><td>mTLS（服务间）+ JWT（外部 API）</td></tr>
+  <tr><td>审计日志</td><td>所有写操作写 audit_log 分区表，保留 7 年</td></tr>
+  <tr><td>卡号掩码</td><td>日志 / API 响应中禁止明文卡号</td></tr>
+  <tr><td>漏洞扫描</td><td>每季度 OWASP Top 10；每年一次渗透测试</td></tr>
+</table>
+
+<!-- adr -->
+<h2 id="adr">10. 技术决策记录（ADR）</h2>
+<div class="adr-grid">
+  <div class="adr-card">
+    <div class="id">ADR-001</div>
+    <div class="decision">授权链路用 Redis 快照判断额度</div>
+    <div class="reason">高并发避免 DB 瓶颈，P99 &lt; 100ms</div>
+    <div class="risk">⚠️ Redis 与 DB 不一致 → 5s TTL + Cache-Aside 缓解</div>
+  </div>
+  <div class="adr-card">
+    <div class="id">ADR-002</div>
+    <div class="decision">交易流水异步写 Kafka</div>
+    <div class="reason">交易成功即返回，流水异步落库削峰</div>
+    <div class="risk">⚠️ 消息丢失风险 → acks=all + 手动提交缓解</div>
+  </div>
+  <div class="adr-card">
+    <div class="id">ADR-003</div>
+    <div class="decision">幂等键存 Redis TTL 24h</div>
+    <div class="reason">防重复扣款，轻量实现</div>
+    <div class="risk">⚠️ Redis 不可用 → 降级 DB 查询幂等键</div>
+  </div>
+  <div class="adr-card">
+    <div class="id">ADR-004</div>
+    <div class="decision">账单批量生成用 XXL-Job</div>
+    <div class="reason">任务可视化，支持 HA</div>
+    <div class="risk">⚠️ 10 万账户需优化批量 SQL</div>
+  </div>
+  <div class="adr-card">
+    <div class="id">ADR-005</div>
+    <div class="decision">分期占用计入 frozen_amount</div>
+    <div class="reason">额度模型统一，计算简单</div>
+    <div class="risk">⚠️ 分期提前结清需主动释放额度</div>
+  </div>
+  <div class="adr-card">
+    <div class="id">ADR-006</div>
+    <div class="decision">使用 Kong API Gateway</div>
+    <div class="reason">性能优于 Java Gateway，插件生态好</div>
+    <div class="risk">⚠️ Lua 插件开发需额外投入</div>
+  </div>
+  <div class="adr-card">
+    <div class="id">ADR-007</div>
+    <div class="decision">PG 乐观锁更新额度</div>
+    <div class="reason">避免分布式锁性能损耗</div>
+    <div class="risk">⚠️ 热点账户冲突重试，最多 3 次</div>
+  </div>
+</div>
+
+<!-- deploy -->
+<h2 id="deploy">11. 部署架构</h2>
+<div class="arch-diagram">┌─────────────────────────────────────────────────────────┐
+│                    AWS / 阿里云（多 AZ）                  │
+│                                                          │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  K8s Cluster（EKS / ACK）                       │   │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  │   │
+│  │  │ Kong GW   │  │ Kong GW   │  │ Kong GW   │  │   │
+│  │  │  3 pods   │  │  3 pods   │  │  3 pods   │  │   │
+│  │  └──────────┘  └──────────┘  └──────────┘  │   │
+│  │  ┌────────────┐  ┌────────────┐  ┌──────────┐ │   │
+│  │  │ Account Svc│  │Transaction │  │Billing   │ │   │
+│  │  │  5+ pods  │  │Svc  10+ pods│  │Svc 3+pods│ │   │
+│  │  └────────────┘  └────────────┘  └──────────┘ │   │
+│  │  ┌──────────────┐  ┌──────────────┐           │   │
+│  │  │Credit Engine │  │Pricing Eng. │           │   │
+│  │  │  5+ pods     │  │  3+ pods    │           │   │
+│  │  └──────────────┘  └──────────────┘           │   │
+│  └─────────────────────────────────────────────────┘   │
+│                    数据层                              │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐     │
+│  │ PostgreSQL │  │   Redis    │  │   Kafka   │     │
+│  │ Primary+   │  │  Cluster   │  │  Cluster  │     │
+│  │ Standby    │  │  3主3从   │  │  多副本   │     │
+│  └────────────┘  └────────────┘  └────────────┘     │
+└─────────────────────────────────────────────────────────┘</div>
+<p><strong>扩缩容策略：</strong>Transaction Svc 基于 CPU + 授权 QPS HPA；Account / Billing Svc 基于 CPU HPA；最小 3 副本保证可用性。</p>
+
+<!-- perf -->
+<h2 id="perf">12. 性能预算</h2>
+<table>
+  <tr><th>链路</th><th>目标</th><th>估算</th><th>瓶颈</th><th>优化手段</th></tr>
+  <tr><td>授权 P99</td><td>&lt; 100ms</td><td>60-80ms</td><td>Redis 查询 + DB 更新</td><td>快照缓存 + 异步写流水</td></tr>
+  <tr><td>账单生成</td><td>10万 &lt; 30min</td><td>预计 20-25min</td><td>DB 批量写入</td><td>批量 INSERT + 多 worker</td></tr>
+  <tr><td>账单查询 P99</td><td>&lt; 500ms</td><td>200-400ms</td><td>DB 复杂查询</td><td>bill_item 缓存 + 分页</td></tr>
+</table>
+
+</div>
+<script>
+  // highlight active nav on scroll
+  const sections = document.querySelectorAll('h2[id], h3[id]');
+  const navLinks = document.querySelectorAll('#sidebar a[href^="#"]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (s.getBoundingClientRect().top <= 100) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+</body>
+</html>
