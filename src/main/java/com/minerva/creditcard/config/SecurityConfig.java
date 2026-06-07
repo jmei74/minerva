@@ -69,7 +69,8 @@ public class SecurityConfig {
                         // SkyEye 静态面板
                         .requestMatchers("/skyeye.html", "/static/**").permitAll()
 
-                        // 所有 API 需要认证
+                        // Journey 监控数据（需要认证）
+                        .requestMatchers("/api/v1/metrics/**").authenticated()
                         .requestMatchers("/api/**").authenticated()
 
                         // 其他全部拒绝

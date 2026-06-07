@@ -210,6 +210,81 @@
     }
 
     .fill-green { background: var(--green); }
+
+    /* ── Journey Grid ─────────────────────────── */
+    .journey-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .journey-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      transition: all 0.25s;
+    }
+
+    .journey-card:hover { background: var(--card-hover); }
+
+    .journey-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .journey-icon { font-size: 20px; }
+    .journey-name { font-size: 14px; font-weight: 600; }
+    .journey-desc { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
+
+    .journey-stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .journey-stat {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .journey-stat.pending { background: rgba(255,212,59,0.15); color: var(--yellow); }
+    .journey-stat.completed { background: rgba(0,208,132,0.15); color: var(--green); }
+    .journey-stat.failed { background: rgba(255,71,87,0.15); color: var(--red); }
+    .journey-stat.other { background: rgba(77,171,247,0.15); color: var(--blue); }
+
+    .journey-rate {
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .journey-rate-bar {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      margin-left: 8px;
+      overflow: hidden;
+    }
+
+    .journey-rate-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--green);
+      transition: width 0.6s ease;
+    }
+
+    .journey-rate-fill.warn { background: var(--yellow); }
+    .journey-rate-fill.danger { background: var(--red); }
     .fill-yellow { background: var(--yellow); }
     .fill-red { background: var(--red); }
 
@@ -284,6 +359,13 @@
     .components .card:nth-child(2) { animation-delay: 0.15s; }
     .components .card:nth-child(3) { animation-delay: 0.2s; }
     .components .card:nth-child(4) { animation-delay: 0.25s; }
+    .journey-card { animation: fadeIn 0.4s ease both; }
+    .journey-card:nth-child(1) { animation-delay: 0.05s; }
+    .journey-card:nth-child(2) { animation-delay: 0.10s; }
+    .journey-card:nth-child(3) { animation-delay: 0.15s; }
+    .journey-card:nth-child(4) { animation-delay: 0.20s; }
+    .journey-card:nth-child(5) { animation-delay: 0.25s; }
+    .journey-card:nth-child(6) { animation-delay: 0.30s; }
 
     /* ── Responsive ──────────────────────────────── */
     @media (max-width: 768px) {
@@ -440,6 +522,12 @@
         <span class="metric-val" style="color:var(--green)">200 OK</span>
       </div>
     </div>
+  </div>
+
+  <!-- Journey 监控 -->
+  <div class="section-title">业务 Journey 监控</div>
+  <div class="journey-grid" id="journeyGrid">
+    <!-- Journey cards filled by JS -->
   </div>
 
   <!-- Health Timeline -->
@@ -635,7 +723,85 @@ async function fullRefresh() {
         flashUpdate($('accountCount'), cnt);
       }
     }
+
+    // Journey 数据
+    const r4 = await fetch(`${API_BASE}/api/v1/metrics/journeys`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (r4.ok) {
+      const data = await r4.json();
+      renderJourneys(data.journeys);
+    }
   } catch(e) { /* ignore */ }
+}
+
+// ── Journey 渲染（增量）──────────────────────────
+function renderJourneys(journeys) {
+  const container = $('journeyGrid');
+  const entries = Object.entries(journeys);
+  const existingCards = {};
+  container.querySelectorAll('[data-journey]').forEach(el => {
+    existingCards[el.dataset.journey] = el;
+  });
+
+  entries.forEach(([key, j]) => {
+    const id = key.replace(/[^\w]/g, '_');
+    const rate = parseFloat(j.successRate || 0);
+    const rateClass = rate >= 90 ? '' : rate >= 70 ? ' warn' : ' danger';
+    const ratePct = rate.toFixed(1) + '%';
+
+    // pending / completed / failed / other 统计
+    const pending = parseInt(j.pending || 0);
+    const completed = parseInt(j.completed || 0);
+    const failed = parseInt(j.failed || 0) + parseInt(j.rejected || 0) + parseInt(j.expired || 0) + parseInt(j.cancelled || 0) + parseInt(j.reversed || 0);
+    const otherKeys = Object.keys(j).filter(k => !['icon','description','pending','completed','failed','rejected','expired','cancelled','reversed','total','successRate','statusBreakdown'].includes(k));
+    const other = otherKeys.length;
+
+    let cardHTML = `
+      <div class="journey-card" data-journey="${id}">
+        <div class="journey-header">
+          <span class="journey-icon">${j.icon || '📦'}</span>
+          <span class="journey-name">${key}</span>
+        </div>
+        <div class="journey-desc">${j.description || ''}</div>
+        <div class="journey-stats">
+          ${pending > 0 ? `<span class="journey-stat pending">⏳ ${pending}</span>` : ''}
+          ${completed > 0 ? `<span class="journey-stat completed">✅ ${completed}</span>` : ''}
+          ${failed > 0 ? `<span class="journey-stat failed">❌ ${failed}</span>` : ''}
+          ${(pending === 0 && completed === 0 && failed === 0) ? `<span class="journey-stat other">— 暂无数据</span>` : ''}
+        </div>
+        <div class="journey-rate">
+          <span>成功率 ${ratePct}</span>
+          <div class="journey-rate-bar">
+            <div class="journey-rate-fill${rateClass}" style="width:${rate}%"></div>
+          </div>
+        </div>
+      </div>`;
+
+    if (existingCards[id]) {
+      // 增量更新
+      const oldCard = existingCards[id];
+      const newCard = (new DOMParser()).parseFromString(cardHTML, 'text/html').querySelector('.journey-card');
+      // 只更新统计和进度条，不重绘整个卡
+      const oldStats = oldCard.querySelector('.journey-stats');
+      const newStats = newCard.querySelector('.journey-stats');
+      if (oldStats.innerHTML !== newStats.innerHTML) {
+        oldStats.innerHTML = newStats.innerHTML;
+        oldCard.querySelectorAll('.journey-stat').forEach(el => {
+          el.classList.add('flash');
+          setTimeout(() => el.classList.remove('flash'), 600);
+        });
+      }
+      const fill = oldCard.querySelector('.journey-rate-fill');
+      const newFill = newCard.querySelector('.journey-rate-fill');
+      if (fill && newFill && fill.style.width !== newFill.style.width) {
+        fill.style.width = newFill.style.width;
+        fill.className = newFill.className;
+      }
+    } else {
+      container.insertAdjacentHTML('beforeend', cardHTML);
+    }
+  });
 }
 
 // ── Ping 点状图（增量更新）──────────────────────────
