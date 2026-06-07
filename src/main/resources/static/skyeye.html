@@ -79,6 +79,14 @@
 
     @keyframes pulse {0%,100%{opacity:1} 50%{opacity:.3} }
 
+    @keyframes flash {
+      0%   { color: var(--blue); }
+      40%  { color: var(--green); }
+      100% { color: inherit; }
+    }
+
+    .flash { animation: flash 0.6s ease; }
+
     /* ── Status bar ──────────────────────────────── */
     .status-bar {
       background: var(--card);
@@ -325,14 +333,113 @@
 
   <!-- Components -->
   <div class="section-title">组件状态</div>
-  <div class="components" id="components">
-    <!-- Filled by JS -->
+  <div class="components">
+
+    <!-- 核心服务 -->
+    <div class="card" data-comp="app">
+      <div class="card-header">
+        <div class="card-name"><span class="icon">🌐</span>信用卡核心服务</div>
+        <span class="badge up" id="badge-app">UP</span>
+      </div>
+      <div class="card-body">
+        <div class="row"><span class="row-label">地址</span><span class="row-value">https://localhost:8080</span></div>
+        <div class="row"><span class="row-label">状态</span><span class="row-value" id="val-app-status">UP</span></div>
+        <div class="row"><span class="row-label">JVM 内存</span><span class="row-value" id="val-jvm-used">-</span></div>
+        <div class="row"><span class="row-label">最大内存</span><span class="row-value" id="val-jvm-max">-</span></div>
+      </div>
+    </div>
+
+    <!-- H2 数据库 -->
+    <div class="card" data-comp="db">
+      <div class="card-header">
+        <div class="card-name"><span class="icon">🗄️</span>H2 数据库（开发）</div>
+        <span class="badge up" id="badge-db">UP</span>
+      </div>
+      <div class="card-body">
+        <div class="row"><span class="row-label">类型</span><span class="row-value">H2 In-Memory</span></div>
+        <div class="row"><span class="row-label">方言</span><span class="row-value">PostgreSQL 兼容</span></div>
+        <div class="row"><span class="row-label">DDL 模式</span><span class="row-value">create（重启重置）</span></div>
+        <div class="row"><span class="row-label">状态</span><span class="row-value" id="val-db-status">UP</span></div>
+      </div>
+    </div>
+
+    <!-- Redis -->
+    <div class="card" data-comp="redis">
+      <div class="card-header">
+        <div class="card-name"><span class="icon">⚡</span>Redis 缓存</div>
+        <span class="badge up" id="badge-redis">UP</span>
+      </div>
+      <div class="card-body">
+        <div class="row"><span class="row-label">地址</span><span class="row-value">localhost:6379</span></div>
+        <div class="row"><span class="row-label">状态</span><span class="row-value" data-field="redis-status">已连接</span></div>
+        <div class="row"><span class="row-label">版本</span><span class="row-value" data-field="redis-ver">-</span></div>
+        <div class="row"><span class="row-label">用途</span><span class="row-value">额度快照缓存</span></div>
+        <div class="row"><span class="row-label">淘汰策略</span><span class="row-value">allkeys-lru</span></div>
+      </div>
+    </div>
+
+    <!-- Kafka -->
+    <div class="card" data-comp="kafka">
+      <div class="card-header">
+        <div class="card-name"><span class="icon">📨</span>Kafka 事件流</div>
+        <span class="badge unknown">未配置</span>
+      </div>
+      <div class="card-body">
+        <div class="row"><span class="row-label">地址</span><span class="row-value">localhost:9092</span></div>
+        <div class="row"><span class="row-label">状态</span><span class="row-value">本地无 Docker</span></div>
+        <div class="row"><span class="row-label">用途</span><span class="row-value">交易事件异步写入</span></div>
+        <div class="row"><span class="row-label">Topic</span><span class="row-value">credit.events</span></div>
+      </div>
+    </div>
   </div>
 
   <!-- Metrics -->
   <div class="section-title">运行时指标</div>
-  <div class="metrics-grid" id="metrics">
-    <!-- Filled by JS -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-label">JVM 堆内存</div>
+      <div class="metric-row">
+        <span class="metric-name">已使用</span>
+        <span class="metric-val" id="memUsed">-</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">最大</span>
+        <span class="metric-val" id="memMax">-</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill fill-green" id="memFill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">系统信息</div>
+      <div class="metric-row">
+        <span class="metric-name">健康状态</span>
+        <span class="metric-val" id="val-health-status" style="color:var(--green)">UP</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">账户数</span>
+        <span class="metric-val" id="accountCount">0</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Redis</span>
+        <span class="metric-val" id="val-redis-status" style="color:var(--green)">UP</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">API 响应</div>
+      <div class="metric-row">
+        <span class="metric-name">/actuator/health</span>
+        <span class="metric-val" id="val-api-health" style="color:var(--green)">200 OK</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">/api/auth/login</span>
+        <span class="metric-val" style="color:var(--green)">200 OK</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">/api/v1/accounts</span>
+        <span class="metric-val" style="color:var(--green)">200 OK</span>
+      </div>
+    </div>
   </div>
 
   <!-- Health Timeline -->
@@ -355,307 +462,241 @@
 <script>
 const API_BASE = 'https://localhost:8080';
 const PING_HISTORY_SIZE = 20;
-let autoRefresh = true;
-let refreshTimer = null;
-let pingHistory = [];
-let lastHealthDetail = null;
-let startTimeMs = Date.now();
 
-// ── Auth ───────────────────────────────────────────────
-async function getToken() {
-  const r = await fetch(`${API_BASE}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'admin', password: 'admin123' })
-  });
-  const d = await r.json();
-  return d.token || '';
+// ── State ──────────────────────────────────────────────
+let pingHistory = [];
+let startTimeMs = Date.now();
+let autoRefresh = true;
+let countdown = 5;
+let fastTimer = null, fullTimer = null;
+
+//缓存（避免每5秒重新获取）
+let cachedToken = '';
+let cachedAcctCount = null;
+let prevUsed = null, prevMax = null;
+let prevStatus = null, prevRedis = null;
+
+// ── Utils ───────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function formatUptime(ms) {
+  const s = Math.floor(ms / 1000), m = Math.floor(s / 60);
+  const h = Math.floor(m / 60), d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ${h%24}h`;
+  if (h > 0) return `${h}h ${m%60}m`;
+  return `${m}m ${s%60}s`;
 }
 
-// ── Health ─────────────────────────────────────────────
-async function fetchHealth() {
+function formatBytes(b) {
+  if (b >= 1e9) return (b/1e9).toFixed(1)+' GB';
+  if (b >= 1e6) return (b/1e6).toFixed(1)+' MB';
+  return (b/1e3).toFixed(0)+' KB';
+}
+
+// 值变化时闪动画
+function flashUpdate(el, newVal) {
+  if (!el || el.textContent === String(newVal)) return;
+  el.textContent = newVal;
+  el.classList.remove('flash');
+  void el.offsetWidth; // reflow触发重绘
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 600);
+}
+
+// ── Auth（只取一次）──────────────────────────────────
+async function ensureToken() {
+  if (cachedToken) return cachedToken;
+  try {
+    const r = await fetch(`${API_BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: 'admin123' })
+    });
+    const d = await r.json();
+    cachedToken = d.token || '';
+  } catch(e) { /* ignore */ }
+  return cachedToken;
+}
+
+// ── Light refresh：健康状态 + ping（每5秒）──────────────
+async function lightRefresh() {
   try {
     const r = await fetch(`${API_BASE}/actuator/health`);
-    const d = await r.json();
-    return d;
-  } catch(e) {
-    return { status: 'DOWN', error: e.message };
-  }
-}
+    const health = await r.json();
+    const statusOk = health.status === 'UP';
 
-// ── Metrics ─────────────────────────────────────────────
-async function fetchMetrics(token) {
-  const endpoints = [
-    'jvm.memory.used',
-    'jvm.memory.max',
-    'jvm.gc.pause',
-    'tomcat.sessions.active.current',
-    'http.server.requests',
-  ];
-  const results = {};
-  for (const ep of endpoints) {
-    try {
-      const r = await fetch(`${API_BASE}/actuator/metrics/${ep}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (r.ok) {
-        const d = await r.json();
-        results[ep] = d.measurements[0]?.value ?? 0;
+    // 系统状态
+    const sysEl = $('sysStatus');
+    const newStatus = health.status;
+    if (prevStatus !== newStatus) {
+      prevStatus = newStatus;
+      sysEl.textContent = newStatus;
+      sysEl.className = 'stat-value ' + (statusOk ? 'up' : 'down');
+      flashUpdate($('val-app-status'), newStatus);
+      flashUpdate($('val-health-status'), newStatus);
+      const badgeEl = $('badge-app');
+      if (badgeEl) { badgeEl.textContent = newStatus; badgeEl.className = 'badge ' + (statusOk ? 'up' : 'down'); }
+      const apiHealthEl = $('val-api-health');
+      if (apiHealthEl) { apiHealthEl.textContent = statusOk ? '200 OK' : 'DOWN'; apiHealthEl.style.color = statusOk ? 'var(--green)' : 'var(--red)'; }
+    }
+
+    // Redis badge
+    const redisStatus = health.components?.redis?.status || null;
+    if (prevRedis !== redisStatus) {
+      prevRedis = redisStatus;
+      const badge = document.querySelector('[data-comp="redis"] .badge');
+      const card = document.querySelector('[data-comp="redis"]');
+      if (badge) {
+        badge.textContent = redisStatus === 'UP' ? 'UP' : (redisStatus || 'DOWN');
+        badge.className = 'badge ' + (redisStatus === 'UP' ? 'up' : 'down');
       }
-    } catch(e) { /* skip */ }
+      if (card) {
+        const statusEl = card.querySelector('[data-field="redis-status"]');
+        if (statusEl) {
+          statusEl.textContent = redisStatus === 'UP' ? '已连接' : (redisStatus === 'DOWN' ? '连接失败' : '未知');
+        }
+        const verEl = card.querySelector('[data-field="redis-ver"]');
+        if (verEl) verEl.textContent = health.components?.redis?.details?.version || '-';
+      }
+    }
+
+    // Ping 历史
+    pingHistory.push(statusOk);
+    if (pingHistory.length > PING_HISTORY_SIZE) pingHistory.shift();
+    updatePingDots();
+
+    // 运行时长（每5秒都更新）
+    $('uptime').textContent = formatUptime(Date.now() - startTimeMs);
+
+    // 错误日志
+    if (!statusOk) {
+      $('errorLog').style.display = 'block';
+      const errComp = Object.entries(health.components || {})
+        .filter(([,v]) => v.status !== 'UP')
+        .map(([k,v]) => `<div class="log-entry"><span class="log-time">${k}</span><span class="log-msg">${v.status}: ${v.details || ''}</span></div>`)
+        .join('');
+      $('logEntries').innerHTML = errComp;
+    } else {
+      $('errorLog').style.display = 'none';
+    }
+  } catch(e) {
+    // 网络错误
+    pingHistory.push(false);
+    if (pingHistory.length > PING_HISTORY_SIZE) pingHistory.shift();
+    updatePingDots();
+    $('sysStatus').textContent = 'DOWN';
+    $('sysStatus').className = 'stat-value down';
   }
-  return results;
+
+  $('lastUpdate').textContent = new Date().toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
 
-// ── Account count ───────────────────────────────────────
-async function fetchAccountCount(token) {
+// ── Full refresh：JVM +账户数（每60秒）──────────────
+async function fullRefresh() {
+  await ensureToken();
+  const token = cachedToken;
+
   try {
-    const r = await fetch(`${API_BASE}/api/v1/accounts`, {
+    // JVM metrics
+    const r1 = await fetch(`${API_BASE}/actuator/metrics/jvm.memory.used`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    if (r.ok) {
-      const d = await r.json();
-      return d._count || d.data?.length || 0;
+    const r2 = await fetch(`${API_BASE}/actuator/metrics/jvm.memory.max`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    let used = 0, max = 1;
+    if (r1.ok) { const d = await r1.json(); used = d.measurements[0]?.value || 0; }
+    if (r2.ok) { const d = await r2.json(); max = d.measurements[0]?.value || 1; }
+
+    const usedPct = max > 0 ? Math.min((used/max)*100,100) : 0;
+    const fillClass = usedPct > 85 ? 'fill-red' : usedPct > 70 ? 'fill-yellow' : 'fill-green';
+    const fillEl = $('memFill');
+    const usedEl = $('memUsed');
+    const maxEl = $('memMax');
+
+    flashUpdate(usedEl, formatBytes(used));
+    if (prevUsed !== used) { prevUsed = used; if (fillEl) fillEl.style.width = usedPct+'%'; }
+    flashUpdate(maxEl, formatBytes(max));
+    if (prevMax !== max) { prevMax = max; if (fillEl) fillEl.className = 'progress-fill ' + fillClass; }
+
+    // 也更新组件卡片的 JVM 值
+    flashUpdate($('val-jvm-used'), formatBytes(used));
+    flashUpdate($('val-jvm-max'), formatBytes(max));
+
+    // 账户数
+    const r3 = await fetch(`${API_BASE}/api/v1/accounts`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (r3.ok) {
+      const d = await r3.json();
+      const cnt = Array.isArray(d) ? d.length : 0;
+      if (cachedAcctCount !== cnt) {
+        cachedAcctCount = cnt;
+        flashUpdate($('accountCount'), cnt);
+      }
     }
-  } catch(e) { /* skip */ }
-  return '?';
+  } catch(e) { /* ignore */ }
 }
 
-// ── Uptime ─────────────────────────────────────────────
-function formatUptime(ms) {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  const h = Math.floor(m / 60);
-  const d = Math.floor(h / 24);
-  if (d > 0) return `${d}d ${h %24}h`;
-  if (h > 0) return `${h}h ${m % 60}m`;
-  return `${m}m ${s % 60}s`;
-}
+// ── Ping 点状图（增量更新）──────────────────────────
+function updatePingDots() {
+  const container = $('pingRow');
+  const dots = container.querySelectorAll('.ping-dot');
+  const len = pingHistory.length;
 
-// ── Memory formatting ───────────────────────────────────
-function formatBytes(b) {
-  if (b >= 1e9) return (b / 1e9).toFixed(1) + ' GB';
-  if (b >= 1e6) return (b / 1e6).toFixed(1) + ' MB';
-  return (b / 1e3).toFixed(0) + ' KB';
-}
-
-// ── Component list ─────────────────────────────────────
-function getComponents(health, metrics, token) {
-  const healthStatus = health.status || 'UNKNOWN';
-  const redisStatus = health.components?.redis?.status || (!healthStatus.includes('DOWN') ? 'UNKNOWN' : 'DOWN');
-  const dbStatus = health.components?.db?.status || 'UP';
-  const diskStatus = health.components?.diskSpace?.status || 'UP';
-
-  return [
-    {
-      name: '信用卡核心服务',
-      icon: '🌐',
-      status: healthStatus === 'UP' ? 'up' : 'down',
-      badge: healthStatus,
-      details: [
-        { label: '地址', value: `${API_BASE}` },
-        { label: '状态', value: healthStatus },
-        { label: 'JVM 内存', value: metrics['jvm.memory.used'] ? formatBytes(metrics['jvm.memory.used']) : '?' },
-        { label: '最大内存', value: metrics['jvm.memory.max'] ? formatBytes(metrics['jvm.memory.max']) : '?' },
-      ]
-    },
-    {
-      name: 'H2 数据库（开发）',
-      icon: '🗄️',
-      status: dbStatus === 'UP' ? 'up' : 'warn',
-      badge: dbStatus,
-      details: [
-        { label: '类型', value: 'H2 In-Memory' },
-        { label: '方言', value: 'PostgreSQL 兼容' },
-        { label: 'DDL 模式', value: 'create（每次重启重置）' },
-        { label: '状态', value: dbStatus },
-      ]
-    },
-    {
-      name: 'Redis 缓存',
-      icon: '⚡',
-      status: redisStatus === 'UP' ? 'up' : (redisStatus === 'UNKNOWN' ? 'unknown' : 'down'),
-      badge: redisStatus === 'UP' ? 'UP' : (redisStatus === 'UNKNOWN' ? '未知' : 'DOWN'),
-      details: [
-        { label: '地址', value: 'localhost:6379' },
-        { label: '状态', value: redisStatus === 'UP' ? '已连接' : redisStatus === 'DOWN' ? '连接失败' : '未知' },
-        { label: '版本', value: health.components?.redis?.details?.version || '-' },
-        { label: '用途', value: '额度快照缓存' },
-        { label: '淘汰策略', value: 'allkeys-lru' },
-      ]
-    },
-    {
-      name: 'Kafka事件流',
-      icon: '📨',
-      status: 'unknown',
-      badge: '未配置',
-      details: [
-        { label: '地址', value: 'localhost:9092' },
-        { label: '状态', value: '本地无 Docker 未启动' },
-        { label: '用途', value: '交易事件异步写入' },
-        { label: 'Topic', value: 'credit.events' },
-      ]
-    },
-  ];
-}
-
-// ── Render ──────────────────────────────────────────────
-async function refresh() {
-  const token = await getToken();
-  const [health, metrics, acctCount] = await Promise.all([
-    fetchHealth(),
-    fetchMetrics(token),
-    fetchAccountCount(token),
-  ]);
-
-  lastHealthDetail = health;
-  const statusOk = health.status === 'UP';
-  pingHistory.push(statusOk);
-  if (pingHistory.length > PING_HISTORY_SIZE) pingHistory.shift();
-
-  // Status bar
-  const sysEl = document.getElementById('sysStatus');
-  sysEl.textContent = health.status || '...';
-  sysEl.className = 'stat-value ' + (statusOk ? 'up' : 'down');
-
-  document.getElementById('startTime').textContent =
-    new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  document.getElementById('uptime').textContent = formatUptime(Date.now() - startTimeMs);
-  document.getElementById('accountCount').textContent = acctCount;
-  document.getElementById('lastUpdate').textContent =
-    new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-  // Components
-  const comps = getComponents(health, metrics, token);
-  document.getElementById('components').innerHTML = comps.map(c => `
-    <div class="card">
-      <div class="card-header">
-        <div class="card-name"><span class="icon">${c.icon}</span>${c.name}</div>
-        <span class="badge ${c.status}">${c.badge}</span>
-      </div>
-      <div class="card-body">
-        ${c.details.map(d => `
-          <div class="row">
-            <span class="row-label">${d.label}</span>
-            <span class="row-value">${d.value}</span>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-
-  // Metrics
-  const used = metrics['jvm.memory.used'] || 0;
-  const max = metrics['jvm.memory.max'] || 1;
-  const usedPct = max > 0 ? Math.min((used / max) * 100, 100) : 0;
-  const fillClass = usedPct > 85 ? 'fill-red' : usedPct > 70 ? 'fill-yellow' : 'fill-green';
-
-  document.getElementById('metrics').innerHTML = `
-    <div class="metric-card">
-      <div class="metric-label">JVM 堆内存</div>
-      <div class="metric-row">
-        <span class="metric-name">已使用</span>
-        <span class="metric-val">${formatBytes(used)}</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-name">最大</span>
-        <span class="metric-val">${formatBytes(max)}</span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill ${fillClass}" style="width:${usedPct.toFixed(1)}%"></div>
-      </div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">系统信息</div>
-      <div class="metric-row">
-        <span class="metric-name">健康状态</span>
-        <span class="metric-val" style="color:${statusOk ? 'var(--green)' : 'var(--red)'}">${health.status}</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-name">账户数</span>
-        <span class="metric-val">${acctCount}</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-name">Redis</span>
-        <span class="metric-val" style="color:${health.components?.redis?.status === 'UP' ? 'var(--green)' : 'var(--text-dim)'}">
-          ${health.components?.redis?.status || '未配置'}
-        </span>
-      </div>
-    </div>
-   <div class="metric-card">
-      <div class="metric-label">API 响应</div>
-      <div class="metric-row">
-        <span class="metric-name">/actuator/health</span>
-        <span class="metric-val" style="color:${statusOk ? 'var(--green)' : 'var(--red)'}">${statusOk ? '200 OK' : 'DOWN'}</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-name">/api/auth/login</span>
-        <span class="metric-val" style="color:var(--green)">200 OK</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-name">/api/v1/accounts</span>
-        <span class="metric-val" style="color:var(--green)">200 OK</span>
-      </div>
-    </div>
-  `;
-
-  // Ping timeline
-  document.getElementById('pingRow').innerHTML = pingHistory.map(ok =>
-    `<div class="ping-dot ${ok ? 'up' : 'down'}" title="${ok ? '健康' : '失败'}"></div>`
-  ).join('');
-  document.getElementById('pingTime').textContent =
-    `最新检测: ${new Date().toLocaleTimeString('zh-CN')} · 历史成功率: ${
-      (pingHistory.filter(Boolean).length / pingHistory.length * 100).toFixed(0)
-    }%`;
-
-  // Error log (show if DOWN)
-  if (!statusOk) {
-    document.getElementById('errorLog').style.display = 'block';
-    const errComp = Object.entries(health.components || {})
-      .filter(([,v]) => v.status !== 'UP' && v.status !== 'UNKNOWN')
-      .map(([k,v]) => `<div class="log-entry"><span class="log-time">${k}</span><span class="log-msg">${v.status}: ${v.details || ''}</span></div>`)
-      .join('');
-    document.getElementById('logEntries').innerHTML = errComp || `<div class="log-entry"><span class="log-time">system</span><span class="log-msg">健康检查返回 DOWN</span></div>`;
-  } else {
-    document.getElementById('errorLog').style.display = 'none';
-  }
-}
-
-// ── Auto-refresh ────────────────────────────────────────
-let refreshSec = 5;
-let countdown = refreshSec;
-
-function toggleAutoRefresh() {
-  autoRefresh = !autoRefresh;
-  const btn = document.getElementById('refreshBtn');
-  const label = document.getElementById('refreshLabel');
-  if (autoRefresh) {
-    btn.classList.remove('paused');
-    label.textContent = `自动刷新 ${refreshSec}s`;
-    scheduleRefresh();
-  } else {
-    btn.classList.add('paused');
-    label.textContent = '已暂停';
-    clearInterval(refreshTimer);
-  }
-}
-
-function scheduleRefresh() {
-  clearInterval(refreshTimer);
-  refreshTimer = setInterval(() => {
-    countdown--;
-    if (countdown <= 0) {
-      countdown = refreshSec;
-      refresh();
+  // 已有足够的点，只更新最后一个
+  if (dots.length === PING_HISTORY_SIZE) {
+    const last = dots[len - 1];
+    if (last) {
+      const ok = pingHistory[len - 1];
+      last.className = 'ping-dot ' + (ok ? 'up' : 'down');
+      last.title = ok ? '健康' : '失败';
     }
-    document.getElementById('refreshLabel').textContent =
-      autoRefresh ? `自动刷新 ${countdown}s` : '已暂停';
-  }, 1000);
+  } else {
+    // 初始化时生成所有点
+    container.innerHTML = pingHistory.map((ok, i) =>
+      `<div class="ping-dot ${ok ? 'up' : 'down'}" title="${ok ? '健康' : '失败'}"></div>`
+    ).join('');
+  }
+
+  const rate = pingHistory.filter(Boolean).length;
+  $('pingTime').textContent =
+    `最新: ${new Date().toLocaleTimeString('zh-CN')} · 成功率: ${(rate/len*100).toFixed(0)}%`;
 }
 
 // ── Boot ────────────────────────────────────────────────
-refresh();
-scheduleRefresh();
+async function init() {
+  $('startTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+  // 首次全量获取
+  await ensureToken();
+  await lightRefresh();
+  await fullRefresh();
+
+  // 每5 秒：轻量刷新（健康 + ping）
+  fastTimer = setInterval(lightRefresh, 5000);
+
+  // 每 60 秒：完整刷新（JVM + 账户）
+  fullTimer = setInterval(fullRefresh, 60000);
+}
+
+function toggleAutoRefresh() {
+  autoRefresh = !autoRefresh;
+  const btn = $('refreshBtn');
+  if (autoRefresh) {
+    btn.classList.remove('paused');
+    btn.querySelector('#refreshLabel').textContent = '自动刷新 5s';
+    fastTimer = setInterval(lightRefresh, 5000);
+    fullTimer = setInterval(fullRefresh, 60000);
+  } else {
+    btn.classList.add('paused');
+    btn.querySelector('#refreshLabel').textContent = '已暂停';
+    clearInterval(fastTimer);
+    clearInterval(fullTimer);
+  }
+}
+
+init();
 </script>
 </body>
 </html>
