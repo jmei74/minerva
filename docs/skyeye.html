@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkyEye · 系统监控面板</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --card-hover: #21253a;
+      --border: #2a2d3e;
+      --text: #e4e7f0;
+      --text-dim: #8b8fa8;
+      --green: #00d084;
+      --red: #ff4757;
+      --yellow: #ffd43b;
+      --blue: #4dabf7;
+      --purple: #da77f2;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .logo-text h1 { font-size: 20px; font-weight: 700; }
+    .logo-text span { font-size: 12px; color: var(--text-dim); }
+
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+
+    .refresh-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .refresh-btn:hover { background: var(--card-hover); }
+    .refresh-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse2s infinite; }
+    .refresh-btn.paused .dot { background: var(--yellow); animation: none; }
+
+    @keyframes pulse {0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── Status bar ──────────────────────────────── */
+    .status-bar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 28px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .stat { text-align: center; }
+    .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 700; }
+    .stat-value.up { color: var(--green); }
+    .stat-value.down { color: var(--red); }
+    .stat-value.warn { color: var(--yellow); }
+
+    /* ── Component grid ─────────────────────────── */
+    .section-title {
+      font-size: 13px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+    }
+
+    .components {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.25s;
+    }
+
+    .card:hover { background: var(--card-hover); transform: translateY(-2px); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .card-name .icon { font-size: 18px; }
+
+    .badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.up { background: rgba(0,208,132,0.15); color: var(--green); }
+    .badge.down { background: rgba(255,71,87,0.15); color: var(--red); }
+    .badge.warn { background: rgba(255,212,59,0.15); color: var(--yellow); }
+    .badge.unknown { background: rgba(139,143,168,0.15); color: var(--text-dim); }
+
+    .card-body { display: flex; flex-direction: column; gap: 8px; }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .row-label { color: var(--text-dim); }
+    .row-value { color: var(--text); font-weight: 500; }
+
+    /* ── Metrics ─────────────────────────────────── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+
+    .metric-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+
+    .metric-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .metric-name { font-size: 12px; color: var(--text-dim); }
+    .metric-val { font-size: 16px; font-weight: 700; }
+
+    .progress-bar {
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+      height: 6px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease;
+    }
+
+    .fill-green { background: var(--green); }
+    .fill-yellow { background: var(--yellow); }
+    .fill-red { background: var(--red); }
+
+    /* ── Timeline ─────────────────────────────────── */
+    .timeline {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    .timeline-title { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+
+    .ping-row {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .ping-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      transition: all 0.3s;
+    }
+
+    .ping-dot.up { background: var(--green); }
+    .ping-dot.down { background: var(--red); }
+    .ping-dot.waiting { background: var(--border); }
+
+    .ping-time {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 8px;
+    }
+
+    /* ── Error log ───────────────────────────────── */
+    .error-log {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 16px;
+    }
+
+    .log-entry {
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      gap: 12px;
+    }
+
+    .log-time { color: var(--blue); flex-shrink: 0; }
+    .log-msg { color: var(--red); }
+
+    /* ── Footer ─────────────────────────────────── */
+    .footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* ── Animations ──────────────────────────────── */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .card, .metric-card, .timeline, .status-bar { animation: fadeIn 0.4s ease both; }
+    .status-bar { animation-delay: 0.05s; }
+    .components .card:nth-child(1) { animation-delay: 0.1s; }
+    .components .card:nth-child(2) { animation-delay: 0.15s; }
+    .components .card:nth-child(3) { animation-delay: 0.2s; }
+    .components .card:nth-child(4) { animation-delay: 0.25s; }
+
+    /* ── Responsive ──────────────────────────────── */
+    @media (max-width: 768px) {
+      .status-bar { grid-template-columns: repeat(2, 1fr); }
+      body { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">💳</div>
+      <div class="logo-text">
+        <h1>SkyEye</h1>
+        <span>信用卡核心系统 · 本地开发环境监控</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="refresh-btn" id="refreshBtn" onclick="toggleAutoRefresh()">
+        <span class="dot"></span>
+        <span id="refreshLabel">自动刷新 5s</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar" id="statusBar">
+    <div class="stat">
+      <div class="stat-label">系统状态</div>
+      <div class="stat-value" id="sysStatus">...</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">启动时间</div>
+      <div class="stat-value" id="startTime" style="font-size:18px">...</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">运行时长</div>
+      <div class="stat-value" id="uptime" style="font-size:18px">...</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">账户总数</div>
+      <div class="stat-value" id="accountCount">...</div>
+    </div>
+  </div>
+
+  <!-- Components -->
+  <div class="section-title">组件状态</div>
+  <div class="components" id="components">
+    <!-- Filled by JS -->
+  </div>
+
+  <!-- Metrics -->
+  <div class="section-title">运行时指标</div>
+  <div class="metrics-grid" id="metrics">
+    <!-- Filled by JS -->
+  </div>
+
+  <!-- Health Timeline -->
+  <div class="timeline">
+    <div class="timeline-title">最近 20 次健康检测</div>
+    <div class="ping-row" id="pingRow"></div>
+    <div class="ping-time" id="pingTime"></div>
+  </div>
+
+  <!-- Error log -->
+  <div class="error-log" id="errorLog" style="display:none">
+    <div class="timeline-title">最近错误</div>
+    <div id="logEntries"></div>
+  </div>
+
+  <div class="footer">
+    Minerva Dev Dashboard · 自动刷新间隔 5s · 最后更新: <span id="lastUpdate">--</span>
+  </div>
+
+<script>
+const API_BASE = 'http://localhost:8080';
+const PING_HISTORY_SIZE = 20;
+let autoRefresh = true;
+let refreshTimer = null;
+let pingHistory = [];
+let lastHealthDetail = null;
+let startTimeMs = Date.now();
+
+// ── Auth ───────────────────────────────────────────────
+async function getToken() {
+  const r = await fetch(`${API_BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+  });
+  const d = await r.json();
+  return d.token || '';
+}
+
+// ── Health ─────────────────────────────────────────────
+async function fetchHealth() {
+  try {
+    const r = await fetch(`${API_BASE}/actuator/health`);
+    const d = await r.json();
+    return d;
+  } catch(e) {
+    return { status: 'DOWN', error: e.message };
+  }
+}
+
+// ── Metrics ─────────────────────────────────────────────
+async function fetchMetrics(token) {
+  const endpoints = [
+    'jvm.memory.used',
+    'jvm.memory.max',
+    'jvm.gc.pause',
+    'tomcat.sessions.active.current',
+    'http.server.requests',
+  ];
+  const results = {};
+  for (const ep of endpoints) {
+    try {
+      const r = await fetch(`${API_BASE}/actuator/metrics/${ep}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (r.ok) {
+        const d = await r.json();
+        results[ep] = d.measurements[0]?.value ?? 0;
+      }
+    } catch(e) { /* skip */ }
+  }
+  return results;
+}
+
+// ── Account count ───────────────────────────────────────
+async function fetchAccountCount(token) {
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/accounts`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (r.ok) {
+      const d = await r.json();
+      return d._count || d.data?.length || 0;
+    }
+  } catch(e) { /* skip */ }
+  return '?';
+}
+
+// ── Uptime ─────────────────────────────────────────────
+function formatUptime(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  const d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ${h %24}h`;
+  if (h > 0) return `${h}h ${m % 60}m`;
+  return `${m}m ${s % 60}s`;
+}
+
+// ── Memory formatting ───────────────────────────────────
+function formatBytes(b) {
+  if (b >= 1e9) return (b / 1e9).toFixed(1) + ' GB';
+  if (b >= 1e6) return (b / 1e6).toFixed(1) + ' MB';
+  return (b / 1e3).toFixed(0) + ' KB';
+}
+
+// ── Component list ─────────────────────────────────────
+function getComponents(health, metrics, token) {
+  const healthStatus = health.status || 'UNKNOWN';
+  const redisStatus = health.components?.redis?.status || (!healthStatus.includes('DOWN') ? 'UNKNOWN' : 'DOWN');
+  const dbStatus = health.components?.db?.status || 'UP';
+  const diskStatus = health.components?.diskSpace?.status || 'UP';
+
+  return [
+    {
+      name: '信用卡核心服务',
+      icon: '🌐',
+      status: healthStatus === 'UP' ? 'up' : 'down',
+      badge: healthStatus,
+      details: [
+        { label: '地址', value: `${API_BASE}` },
+        { label: '状态', value: healthStatus },
+        { label: 'JVM 内存', value: metrics['jvm.memory.used'] ? formatBytes(metrics['jvm.memory.used']) : '?' },
+        { label: '最大内存', value: metrics['jvm.memory.max'] ? formatBytes(metrics['jvm.memory.max']) : '?' },
+      ]
+    },
+    {
+      name: 'H2 数据库（开发）',
+      icon: '🗄️',
+      status: dbStatus === 'UP' ? 'up' : 'warn',
+      badge: dbStatus,
+      details: [
+        { label: '类型', value: 'H2 In-Memory' },
+        { label: '方言', value: 'PostgreSQL 兼容' },
+        { label: 'DDL 模式', value: 'create（每次重启重置）' },
+        { label: '状态', value: dbStatus },
+      ]
+    },
+    {
+      name: 'Redis 缓存',
+      icon: '⚡',
+      status: redisStatus === 'UP' ? 'up' : (redisStatus === 'UNKNOWN' ? 'unknown' : 'down'),
+      badge: redisStatus === 'UP' ? 'UP' : (redisStatus === 'UNKNOWN' ? '未配置' : 'DOWN'),
+      details: [
+        { label: '地址', value: 'localhost:6379' },
+        { label: '状态', value: redisStatus === 'UP' ? '已连接' : '未运行（本地无 Docker）' },
+        { label: '用途', value: '额度快照缓存' },
+        { label: '淘汰策略', value: 'allkeys-lru' },
+      ]
+    },
+    {
+      name: 'Kafka事件流',
+      icon: '📨',
+      status: 'unknown',
+      badge: '未配置',
+      details: [
+        { label: '地址', value: 'localhost:9092' },
+        { label: '状态', value: '本地无 Docker 未启动' },
+        { label: '用途', value: '交易事件异步写入' },
+        { label: 'Topic', value: 'credit.events' },
+      ]
+    },
+  ];
+}
+
+// ── Render ──────────────────────────────────────────────
+async function refresh() {
+  const token = await getToken();
+  const [health, metrics, acctCount] = await Promise.all([
+    fetchHealth(),
+    fetchMetrics(token),
+    fetchAccountCount(token),
+  ]);
+
+  lastHealthDetail = health;
+  const statusOk = health.status === 'UP';
+  pingHistory.push(statusOk);
+  if (pingHistory.length > PING_HISTORY_SIZE) pingHistory.shift();
+
+  // Status bar
+  const sysEl = document.getElementById('sysStatus');
+  sysEl.textContent = health.status || '...';
+  sysEl.className = 'stat-value ' + (statusOk ? 'up' : 'down');
+
+  document.getElementById('startTime').textContent =
+    new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('uptime').textContent = formatUptime(Date.now() - startTimeMs);
+  document.getElementById('accountCount').textContent = acctCount;
+  document.getElementById('lastUpdate').textContent =
+    new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  // Components
+  const comps = getComponents(health, metrics, token);
+  document.getElementById('components').innerHTML = comps.map(c => `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-name"><span class="icon">${c.icon}</span>${c.name}</div>
+        <span class="badge ${c.status}">${c.badge}</span>
+      </div>
+      <div class="card-body">
+        ${c.details.map(d => `
+          <div class="row">
+            <span class="row-label">${d.label}</span>
+            <span class="row-value">${d.value}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // Metrics
+  const used = metrics['jvm.memory.used'] || 0;
+  const max = metrics['jvm.memory.max'] || 1;
+  const usedPct = max > 0 ? Math.min((used / max) * 100, 100) : 0;
+  const fillClass = usedPct > 85 ? 'fill-red' : usedPct > 70 ? 'fill-yellow' : 'fill-green';
+
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">JVM 堆内存</div>
+      <div class="metric-row">
+        <span class="metric-name">已使用</span>
+        <span class="metric-val">${formatBytes(used)}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">最大</span>
+        <span class="metric-val">${formatBytes(max)}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ${fillClass}" style="width:${usedPct.toFixed(1)}%"></div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">系统信息</div>
+      <div class="metric-row">
+        <span class="metric-name">健康状态</span>
+        <span class="metric-val" style="color:${statusOk ? 'var(--green)' : 'var(--red)'}">${health.status}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">账户数</span>
+        <span class="metric-val">${acctCount}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Redis</span>
+        <span class="metric-val" style="color:${health.components?.redis?.status === 'UP' ? 'var(--green)' : 'var(--text-dim)'}">
+          ${health.components?.redis?.status || '未配置'}
+        </span>
+      </div>
+    </div>
+   <div class="metric-card">
+      <div class="metric-label">API 响应</div>
+      <div class="metric-row">
+        <span class="metric-name">/actuator/health</span>
+        <span class="metric-val" style="color:${statusOk ? 'var(--green)' : 'var(--red)'}">${statusOk ? '200 OK' : 'DOWN'}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">/api/auth/login</span>
+        <span class="metric-val" style="color:var(--green)">200 OK</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">/api/v1/accounts</span>
+        <span class="metric-val" style="color:var(--green)">200 OK</span>
+      </div>
+    </div>
+  `;
+
+  // Ping timeline
+  document.getElementById('pingRow').innerHTML = pingHistory.map(ok =>
+    `<div class="ping-dot ${ok ? 'up' : 'down'}" title="${ok ? '健康' : '失败'}"></div>`
+  ).join('');
+  document.getElementById('pingTime').textContent =
+    `最新检测: ${new Date().toLocaleTimeString('zh-CN')} · 历史成功率: ${
+      (pingHistory.filter(Boolean).length / pingHistory.length * 100).toFixed(0)
+    }%`;
+
+  // Error log (show if DOWN)
+  if (!statusOk) {
+    document.getElementById('errorLog').style.display = 'block';
+    const errComp = Object.entries(health.components || {})
+      .filter(([,v]) => v.status !== 'UP' && v.status !== 'UNKNOWN')
+      .map(([k,v]) => `<div class="log-entry"><span class="log-time">${k}</span><span class="log-msg">${v.status}: ${v.details || ''}</span></div>`)
+      .join('');
+    document.getElementById('logEntries').innerHTML = errComp || `<div class="log-entry"><span class="log-time">system</span><span class="log-msg">健康检查返回 DOWN</span></div>`;
+  } else {
+    document.getElementById('errorLog').style.display = 'none';
+  }
+}
+
+// ── Auto-refresh ────────────────────────────────────────
+let refreshSec = 5;
+let countdown = refreshSec;
+
+function toggleAutoRefresh() {
+  autoRefresh = !autoRefresh;
+  const btn = document.getElementById('refreshBtn');
+  const label = document.getElementById('refreshLabel');
+  if (autoRefresh) {
+    btn.classList.remove('paused');
+    label.textContent = `自动刷新 ${refreshSec}s`;
+    scheduleRefresh();
+  } else {
+    btn.classList.add('paused');
+    label.textContent = '已暂停';
+    clearInterval(refreshTimer);
+  }
+}
+
+function scheduleRefresh() {
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) {
+      countdown = refreshSec;
+      refresh();
+    }
+    document.getElementById('refreshLabel').textContent =
+      autoRefresh ? `自动刷新 ${countdown}s` : '已暂停';
+  }, 1000);
+}
+
+// ── Boot ────────────────────────────────────────────────
+refresh();
+scheduleRefresh();
+</script>
+</body>
+</html>
