@@ -464,13 +464,13 @@
     <div class="card" data-comp="kafka">
       <div class="card-header">
         <div class="card-name"><span class="icon">📨</span>Kafka 事件流</div>
-        <span class="badge unknown">未配置</span>
+        <span class="badge up" id="badge-kafka">UP</span>
       </div>
       <div class="card-body">
         <div class="row"><span class="row-label">地址</span><span class="row-value">localhost:9092</span></div>
-        <div class="row"><span class="row-label">状态</span><span class="row-value">本地无 Docker</span></div>
-        <div class="row"><span class="row-label">用途</span><span class="row-value">交易事件异步写入</span></div>
-        <div class="row"><span class="row-label">Topic</span><span class="row-value">credit.events</span></div>
+        <div class="row"><span class="row-label">状态</span><span class="row-value" id="val-kafka-status">已连接</span></div>
+        <div class="row"><span class="row-label">用途</span><span class="row-value">5条业务事件流</span></div>
+        <div class="row"><span class="row-label">Topics</span><span class="row-value" id="val-kafka-topics">credit-card.*</span></div>
       </div>
     </div>
   </div>
@@ -645,6 +645,21 @@ async function lightRefresh() {
         }
         const verEl = card.querySelector('[data-field="redis-ver"]');
         if (verEl) verEl.textContent = health.components?.redis?.details?.version || '-';
+      }
+
+      // Kafka
+      const kafkaStatus = health.components?.kafka?.status;
+      const kafkaBadge = $('badge-kafka');
+      const kafkaCard = document.querySelector('[data-comp="kafka"]');
+      if (kafkaBadge) {
+        kafkaBadge.textContent = kafkaStatus === 'UP' ? 'UP' : (kafkaStatus || 'DOWN');
+        kafkaBadge.className = 'badge ' + (kafkaStatus === 'UP' ? 'up' : 'down');
+      }
+      if (kafkaCard) {
+        const statusEl = kafkaCard.querySelector('#val-kafka-status');
+        if (statusEl) {
+          statusEl.textContent = kafkaStatus === 'UP' ? '已连接' : (kafkaStatus === 'DOWN' ? '连接失败' : '未知');
+        }
       }
     }
 

@@ -42,6 +42,7 @@ public class TransactionService {
     private final AuthorizationRepository authorizationRepository;
     private final CreditEngine creditEngine;
     private final IdempotencyManager idempotencyManager;
+    private final KafkaEventService kafkaEventService;
 
     private static final int MAX_RETRY = 3;
 
@@ -49,12 +50,14 @@ public class TransactionService {
                              TransactionRepository transactionRepository,
                              AuthorizationRepository authorizationRepository,
                              CreditEngine creditEngine,
-                             IdempotencyManager idempotencyManager) {
+                             IdempotencyManager idempotencyManager,
+                             KafkaEventService kafkaEventService) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.authorizationRepository = authorizationRepository;
         this.creditEngine = creditEngine;
         this.idempotencyManager = idempotencyManager;
+        this.kafkaEventService = kafkaEventService;
     }
 
     /**
@@ -127,6 +130,18 @@ public class TransactionService {
         log.info("Authorization approved: authCode={}, account={}, available={}",
                 authCode, account.getAccountId(), availableAfter);
 
+        // Kafka 事件
+        kafkaEventService.publishAuthorization(
+                authCode,
+                account.getAccountId().toString(),
+                request.getCardNo(),
+                request.getTxnType(),
+                request.getAmount().doubleValue(),
+                request.getMerchantId(),
+                request.getMerchantName(),
+                authorization.getStatus().name()
+        );
+
         return AuthorizationResponse.approved(authCode, referenceNo, availableAfter);
     }
 
@@ -170,7 +185,20 @@ public class TransactionService {
         txn.setTxnTime(LocalDateTime.now());
         txn.setAvailableAmountBefore(availableAfter.add(settleAmount));
         txn.setAvailableAmountAfter(availableAfter);
-        return transactionRepository.save(txn);
+        Transaction saved = transactionRepository.save(txn);
+
+        // Kafka 事件
+        kafkaEventService.publishTransaction(
+                saved.getTxnId().toString(),
+                authorization.getAccountId().toString(),
+                saved.getTxnType().name(),
+                saved.getTxnAmount().doubleValue(),
+                saved.getAvailableAmountBefore().doubleValue(),
+                saved.getAvailableAmountAfter().doubleValue(),
+                saved.getStatus().name()
+        );
+
+        return saved;
     }
 
     /**
@@ -199,7 +227,20 @@ public class TransactionService {
         txn.setReferenceNo("REFUND-" + originalTxnId);
         txn.setStatus(TransactionStatus.COMPLETED);
         txn.setTxnTime(LocalDateTime.now());
-        return transactionRepository.save(txn);
+        Transaction saved = transactionRepository.save(txn);
+
+        // Kafka 事件
+        kafkaEventService.publishTransaction(
+                saved.getTxnId().toString(),
+                accountId.toString(),
+                saved.getTxnType().name(),
+                saved.getTxnAmount().doubleValue(),
+                saved.getAvailableAmountBefore().doubleValue(),
+                saved.getAvailableAmountAfter().doubleValue(),
+                saved.getStatus().name()
+        );
+
+        return saved;
     }
 
     /**
@@ -228,7 +269,19 @@ public class TransactionService {
         txn.setAvailableAmountAfter(account.getAvailableAmount());
         txn.setStatus(TransactionStatus.COMPLETED);
         txn.setTxnTime(LocalDateTime.now());
-        return transactionRepository.save(txn);
+        Transaction saved = transactionRepository.save(txn);
+
+        // Kafka 事件
+        kafkaEventService.publishRepayment(
+                saved.getTxnId().toString(),
+                accountId.toString(),
+                saved.getTxnAmount().doubleValue(),
+                saved.getAvailableAmountBefore().doubleValue(),
+                saved.getAvailableAmountAfter().doubleValue(),
+                saved.getStatus().name()
+        );
+
+        return saved;
     }
 
     private AuthorizationType determineAuthType(String txnType) {
