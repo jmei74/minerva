@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "authorization",
+@Table(name = "card_authorization",
        indexes = {
            @Index(name = "idx_auth_account", columnList = "account_id"),
            @Index(name = "idx_auth_expire", columnList = "expire_time")

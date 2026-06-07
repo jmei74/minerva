@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: credit-card-core
+
+  # H2 内存数据库（dev 本地开发）
+  datasource:
+    url: jdbc:h2:mem:creditcard_dev;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_EMPTY_LOBS=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    show-sql: true
+
+  #禁用 Flyway（ddl-auto=create 已够用）
+  flyway:
+    enabled: false
+
+  # Redis（本地没有就跳过）
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  # Kafka（本地没有就跳过）
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+      group-id: credit-card-dev
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    com.minerva: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET:minerva-credit-card-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+# AWS（dev 不需要真实 KMS）
+aws:
+  region: ap-southeast-1
+  kms:
+    key-id: ${KMS_KEY_ID:dev-key-id}

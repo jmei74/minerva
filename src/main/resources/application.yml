@@ -51,7 +51,7 @@ logging:
 aws:
   region: ${AWS_REGION:ap-southeast-1}
   kms:
-    key-id: ${KMS_KEY_ID:}
+    key-id: ${KMS_KEY_ID:dev-key-placeholder-not-used}
 
 # JWT Configuration
 jwt:
