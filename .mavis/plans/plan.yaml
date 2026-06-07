@@ -1,0 +1,60 @@
+version: 1
+plan:
+  name: '信用卡核心系统设计与开发'
+  max_concurrency: 10
+  max_consecutive_failures: 2
+  max_cycles: 10
+  verifier_config:
+    default_verifiers: [verifier]
+    audit_sample_rate: 0.0
+tasks:
+  - id: product-design
+    title: '产品设计 — 信用卡核心系统 PRD 和技术方案'
+    prompt: '你是小晶，产品经理。请为信用卡核心系统设计一份产品需求文档（PRD）和技术方案。
+
+要求：
+1. 定义核心功能范围：账户管理、交易处理、额度控制、账单生成
+2. 设计系统模块划分和数据模型
+3. 给出 API 接口概要设计（RESTful）
+4. 明确非功能性需求（安全、并发、可用性）
+5. 整理成一份结构化文档，写入 /Users/jmei/projects/minerva/docs/credit-card-prd.md
+6. commit 并推送到 GitHub（分支名：feature/credit-card-prd）'
+    assigned_to: product-manager
+    verified_by: verifier
+    verify_prompt: '审查 PRD 文档，确认：1) 核心功能覆盖完整（账户/交易/额度/账单）；2) 数据模型合理；3) API 设计符合 RESTful 规范；4) 文档结构清晰；5) 无逻辑矛盾。'
+    timeout_ms: 1800000
+
+  - id: backend-impl
+    title: '后端开发 — 信用卡核心系统后端实现'
+    prompt: '你是小明，资深后端开发工程师。请在 /Users/jmei/projects/minerva 下开发信用卡核心系统后端。
+
+要求：
+1. 语言：Java，使用 Spring Boot
+2. 数据库：PostgreSQL（用 Docker 或 H2 内存数据库均可）
+3. 核心模块：账户管理、交易处理、额度控制、账单生成
+4. RESTful API 设计与实现
+5. 单元测试覆盖核心业务逻辑
+6. 代码写到 /Users/jmei/projects/minerva/backend/ 目录
+7. 完成后 commit 并 push 到 GitHub（分支名：feature/credit-card-backend）'
+    assigned_to: backend-developer
+    depends_on: [product-design]
+    verified_by: verifier
+    verify_prompt: '编译代码并运行单元测试，确认：1) 项目能成功编译；2) 核心业务逻辑测试通过；3) API 端点设计合理；4) 无安全漏洞（硬编码密码、SQL 注入风险等）。'
+    timeout_ms: 3600000
+
+  - id: frontend-impl
+    title: '前端开发 — 信用卡核心系统前端界面'
+    prompt: '你是杰哥，前端开发工程师。请为信用卡核心系统开发前端界面。
+
+要求：
+1. 技术栈：React + TypeScript
+2. 核心页面：账户概览、交易记录、额度查看、账单展示
+3. 调用后端 API（等 backend-impl 完成后参考 API 设计）
+4. 响应式设计，兼容桌面端
+5. 代码写到 /Users/jmei/projects/minerva/frontend/ 目录
+6. 完成后 commit 并 push 到 GitHub（分支名：feature/credit-card-frontend）'
+    assigned_to: frontend-developer
+    depends_on: [product-design]
+    verified_by: verifier
+    verify_prompt: '启动前端开发服务器，确认：1) 页面能正常加载；2) 核心 UI 组件渲染正常；3) 无控制台报错；4) 响应式布局正常。'
+    timeout_ms: 3600000

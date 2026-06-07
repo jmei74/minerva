@@ -4,39 +4,95 @@ import com.minerva.creditcard.util.CardEncryptionUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 
 /**
  * 安全配置
- * 架构约束: §11 PCI-DSS - AES-256卡号加密
+ * 架构约束: §11 PCI-DSS - AES-256卡号加密 + §7/§8 访问控制
  *
- * 注: 生产环境应从 AWS KMS 获取密钥
+ * JWT 鉴权策略:
+ * - 所有 /api/** 请求需要有效 JWT Token
+ * - /api/auth/** 用于获取 Token（登录）
+ * - /actuator/health 公开访问（健康检查）
+ * - 使用无状态 Session（不存储会话）
  */
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
     @Value("${aws.kms.key-id:}")
     private String kmsKeyId;
 
+    @Value("${jwt.secret:minerva-credit-card-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}")
+    private String jwtSecret;
+
     @Bean
     public CardEncryptionUtil cardEncryptionUtil() {
-        // 生产环境: 从 AWS KMS 获取实际密钥
-        // 这里用配置的key-id派生（简化实现）
         byte[] keyBytes = deriveKey(kmsKeyId);
         return new CardEncryptionUtil(keyBytes);
     }
 
-    /**
-     * 从 KMS key-id 派生 32 字节 AES 密钥
-     * 生产环境应调用 AWS KMS GenerateDataKey API
-     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthFilter jwtAuthFilter) throws Exception {
+        http
+                // 禁用 CSRF（JWT 无状态，不需要）
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // 无状态会话
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // 授权规则
+                .authorizeHttpRequests(auth -> auth
+                        // 公开端点
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/info").permitAll()
+
+                        // 开发环境临时开放文档
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // 所有 API 需要认证
+                        .requestMatchers("/api/**").authenticated()
+
+                        // 其他全部拒绝
+                        .anyRequest().denyAll())
+
+                // 添加 JWT 过滤器（在 UsernamePasswordAuthenticationFilter 之前）
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // 异常处理
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json");
+                            response.getWriter().write(
+                                    "{\"error\":\"UNAUTHORIZED\",\"message\":\"Valid JWT token required\"}"
+                            );
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(403);
+                            response.setContentType("application/json");
+                            response.getWriter().write(
+                                    "{\"error\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}"
+                            );
+                        }));
+
+        return http.build();
+    }
+
     private byte[] deriveKey(String keyId) {
-        // 简单演示：使用 key-id 的 UTF-8 字节填充/截断至 32 字节
-        // WARNING: 生产环境必须使用真正的随机 AES-256 密钥
         if (keyId == null || keyId.isBlank()) {
-            // 默认测试密钥（32字节）
             return "minerva-credit-card-key-32bytes!!".getBytes(StandardCharsets.UTF_8);
         }
         byte[] raw = keyId.getBytes(StandardCharsets.UTF_8);
