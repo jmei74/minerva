@@ -4,19 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SkyEye · 系统监控面板</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    /* ── Theme tokens ────────────────────────────── */
     :root {
-      --bg: #0f1117;
-      --card: #1a1d27;
-      --card-hover: #21253a;
-      --border: #2a2d3e;
-      --text: #e4e7f0;
-      --text-dim: #8b8fa8;
-      --green: #00d084;
-      --red: #ff4757;
-      --yellow: #ffd43b;
-      --blue: #4dabf7;
-      --purple: #da77f2;
+      --bg:           #07080d;
+      --surface:      #0d0f18;
+      --card:         #111422;
+      --card-hover:   #161929;
+      --border:       #1e2235;
+      --border-glow:  rgba(0, 212, 132, 0.18);
+      --text:         #e8ecf4;
+      --text-dim:     #6b7194;
+      --text-muted:   #3a3f5c;
+      --green:        #00d084;
+      --green-glow:   rgba(0, 208, 132, 0.25);
+      --green-dim:    rgba(0, 208, 132, 0.08);
+      --red:          #ff4757;
+      --red-glow:     rgba(255, 71, 87, 0.25);
+      --red-dim:      rgba(255, 71, 87, 0.08);
+      --yellow:       #ffd43b;
+      --yellow-glow:  rgba(255, 212, 59, 0.25);
+      --yellow-dim: rgba(255, 212, 59, 0.08);
+      --blue:         #4dabf7;
+      --blue-glow:    rgba(77, 171, 247, 0.25);
+      --blue-dim:     rgba(77, 171, 247, 0.08);
+      --purple:       #da77f2;
+      --purple-glow:  rgba(218, 119, 242, 0.25);
+      --cyan:         #22d3ee;
+      --cyan-glow:    rgba(34, 211, 238, 0.25);
+      --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono:    'JetBrains Mono', 'SF Mono', monospace;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,9 +43,13 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      font-family: var(--font-sans);
       min-height: 100vh;
-      padding: 24px;
+      padding: 28px 32px 40px;
+      background-image:
+        radial-gradient(ellipse 60% 50% at 15% 0%, rgba(0,212,132,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 85% 10%, rgba(77,171,247,0.04) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 35% at 50% 100%, rgba(218,119,242,0.03) 0%, transparent 50%);
     }
 
     /* ── Header ─────────────────────────────────── */
@@ -37,87 +60,123 @@
       margin-bottom: 28px;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .logo { display: flex; align-items: center; gap: 14px; }
 
     .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, var(--blue), var(--purple));
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
+      width: 46px; height: 46px;
+      background: linear-gradient(135deg, #0d1f1a, #00d08422);
+      border: 1px solid rgba(0,212,132,0.25);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px rgba(0,212,132,0.12);
     }
 
-    .logo-text h1 { font-size: 20px; font-weight: 700; }
-    .logo-text span { font-size: 12px; color: var(--text-dim); }
+    .logo-text h1 {
+      font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(90deg, var(--text), var(--green));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo-text p { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-family: var(--font-mono); }
 
     .header-actions { display: flex; gap: 10px; align-items: center; }
+
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--green-dim);
+      border: 1px solid rgba(0,212,132,0.2);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px; font-weight: 600; color: var(--green);
+      font-family: var(--font-mono);
+    }
+
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: livePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--green); }
+      50% { opacity: 0.4; box-shadow: 0 0 3px var(--green); }
+    }
 
     .refresh-btn {
       background: var(--card);
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 13px; font-weight: 500;
       transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      display: flex; align-items: center; gap: 7px;
     }
+    .refresh-btn:hover { background: var(--card-hover); border-color: var(--text-muted); }
+    .refresh-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: livePulse 2s infinite; }
+    .refresh-btn.paused .dot { background: var(--yellow); animation: none; box-shadow: none; }
 
-    .refresh-btn:hover { background: var(--card-hover); }
-    .refresh-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse2s infinite; }
-    .refresh-btn.paused .dot { background: var(--yellow); animation: none; }
-
-    @keyframes pulse {0%,100%{opacity:1} 50%{opacity:.3} }
-
-    @keyframes flash {
-      0%   { color: var(--blue); }
-      40%  { color: var(--green); }
-      100% { color: inherit; }
-    }
-
-    .flash { animation: flash 0.6s ease; }
-
-    /* ── Status bar ──────────────────────────────── */
-    .status-bar {
-      background: var(--card);
+    /* ── Hero status bar ──────────────────────────── */
+    .hero-bar {
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px 28px;
+      border-radius: 18px;
+      padding: 28px 36px;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: 1fr 1fr 1fr 1fr;
       gap: 24px;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
     }
 
-    .stat { text-align: center; }
-    .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-    .stat-value { font-size: 26px; font-weight: 700; }
-    .stat-value.up { color: var(--green); }
-    .stat-value.down { color: var(--red); }
-    .stat-value.warn { color: var(--yellow); }
+    .hero-bar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(0,212,132,0.12), transparent50%, rgba(77,171,247,0.08));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .stat { text-align: center; position: relative; }
+    .stat-label {
+      font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 2px;
+      font-weight: 600; margin-bottom: 10px;
+      font-family: var(--font-mono);
+    }
+    .stat-value { font-size: 28px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+    .stat-value.up { color: var(--green); text-shadow: 0 0 24px rgba(0,212,132,0.4); }
+    .stat-value.down { color: var(--red); text-shadow: 0 0 24px rgba(255,71,87,0.4); }
+    .stat-value.warn { color: var(--yellow); text-shadow: 0 0 24px rgba(255,212,59,0.4); }
+    .stat-value.neutral { color: var(--text); }
+    .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 6px; font-family: var(--font-mono); }
+
+    /* ── Section titles ─────────────────────────── */
+    .section-title {
+      font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 2px;
+      font-weight: 700; margin-bottom: 14px;
+      font-family: var(--font-mono);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
 
     /* ── Component grid ─────────────────────────── */
-    .section-title {
-      font-size: 13px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-bottom: 14px;
-    }
-
     .components {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
       gap: 16px;
       margin-bottom: 28px;
     }
@@ -125,252 +184,256 @@
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      transition: all 0.25s;
+      border-radius: 16px;
+      padding: 22px;
+      transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+      position: relative;
+      overflow: hidden;
     }
 
-    .card:hover { background: var(--card-hover); transform: translateY(-2px); }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      transition: background 0.3s;
+    }
+
+    .card:hover {
+      background: var(--card-hover);
+      border-color: rgba(255,255,255,0.08);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+
+    .card.up { border-color: rgba(0,212,132,0.15); }
+    .card.up::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+    .card.down { border-color: rgba(255,71,87,0.15); }
+    .card.down::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+    .card.warn { border-color: rgba(255,212,59,0.15); }
+    .card.warn::before { background: linear-gradient(90deg, transparent, var(--yellow), transparent); }
 
     .card-header {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .card-name {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 15px;
-      font-weight: 600;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 15px; font-weight: 700;
     }
-
-    .card-name .icon { font-size: 18px; }
+    .card-name .icon { font-size: 20px; }
 
     .badge {
-      font-size: 11px;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font-size: 11px; padding: 4px 10px;
+      border-radius: 20px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      font-family: var(--font-mono);
+    }
+    .badge.up {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(0,212,132,0.25);
+      box-shadow: 0 0 12px rgba(0,212,132,0.1);
+    }
+    .badge.down {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid rgba(255,71,87,0.25);
+      box-shadow: 0 0 12px rgba(255,71,87,0.1);
+    }
+    .badge.warn {
+      background: var(--yellow-dim);
+      color: var(--yellow);
+      border: 1px solid rgba(255,212,59,0.25);
+      box-shadow: 0 0 12px rgba(255,212,59,0.1);
+    }
+    .badge.unknown {
+      background: rgba(107,113,148,0.1);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
     }
 
-    .badge.up { background: rgba(0,208,132,0.15); color: var(--green); }
-    .badge.down { background: rgba(255,71,87,0.15); color: var(--red); }
-    .badge.warn { background: rgba(255,212,59,0.15); color: var(--yellow); }
-    .badge.unknown { background: rgba(139,143,168,0.15); color: var(--text-dim); }
-
-    .card-body { display: flex; flex-direction: column; gap: 8px; }
-
-    .row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-    }
-
-    .row-label { color: var(--text-dim); }
-    .row-value { color: var(--text); font-weight: 500; }
+    .card-body { display: flex; flex-direction: column; gap: 10px; }
+    .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; gap: 8px; }
+    .row-label { color: var(--text-dim); flex-shrink: 0; }
+    .row-value { color: var(--text); font-weight: 600; font-family: var(--font-mono); font-size: 12px; text-align: right; }
 
     /* ── Metrics ─────────────────────────────────── */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
       margin-bottom: 28px;
     }
 
     .metric-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px 20px;
+      border-radius: 16px;
+      padding: 20px 22px;
+      transition: all 0.3s;
+    }
+    .metric-card:hover {
+      background: var(--card-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
     }
 
-    .metric-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .metric-label {
+      font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 2px;
+      font-weight: 700; margin-bottom: 14px;
+      font-family: var(--font-mono);
+    }
 
-    .metric-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .metric-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
     .metric-name { font-size: 12px; color: var(--text-dim); }
-    .metric-val { font-size: 16px; font-weight: 700; }
+    .metric-val { font-size: 17px; font-weight: 700; font-family: var(--font-mono); }
 
     .progress-bar {
-      background: rgba(255,255,255,0.06);
-      border-radius: 4px;
-      height: 6px;
-      margin-top: 8px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 6px;
+      height: 5px;
+      margin-top: 12px;
       overflow: hidden;
     }
+    .progress-fill { height: 100%; border-radius: 6px; transition: width 0.8s ease; }
+    .fill-green { background: linear-gradient(90deg, var(--green), #00f5a0); box-shadow: 0 0 8px rgba(0,212,132,0.4); }
+    .fill-yellow { background: linear-gradient(90deg, var(--yellow), #ffe066); box-shadow: 0 0 8px rgba(255,212,59,0.4); }
+    .fill-red { background: linear-gradient(90deg, var(--red), #ff6b7a); box-shadow: 0 0 8px rgba(255,71,87,0.4); }
 
-    .progress-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.8s ease;
-    }
-
-    .fill-green { background: var(--green); }
-
-    /* ── Journey Grid ─────────────────────────── */
+    /* ── Journey Grid ──────────────────────────── */
     .journey-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
       gap: 14px;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     .journey-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 18px;
-      transition: all 0.25s;
+      border-radius: 16px;
+      padding: 18px 20px;
+      transition: all 0.3s;
     }
+    .journey-card:hover { background: var(--card-hover); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
 
-    .journey-card:hover { background: var(--card-hover); }
-
-    .journey-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
+    .journey-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
     .journey-icon { font-size: 20px; }
-    .journey-name { font-size: 14px; font-weight: 600; }
-    .journey-desc { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
+    .journey-name { font-size: 14px; font-weight: 700; }
+    .journey-desc { font-size: 11px; color: var(--text-dim); margin-bottom: 12px; line-height: 1.4; }
 
-    .journey-stats {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
+    .journey-stats { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+    .journey-stat { font-size: 11px; padding: 3px 9px; border-radius: 6px; font-weight: 700; font-family: var(--font-mono); }
+    .journey-stat.pending { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(255,212,59,0.2); }
+    .journey-stat.completed { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,212,132,0.2); }
+    .journey-stat.failed { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,71,87,0.2); }
+    .journey-stat.other { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(77,171,247,0.2); }
 
-    .journey-stat {
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-weight: 600;
-    }
+    .journey-rate { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .journey-rate-label { font-size: 11px; color: var(--text-dim); font-family: var(--font-mono); white-space: nowrap; }
+    .journey-rate-pct { font-size: 13px; font-weight: 700; font-family: var(--font-mono); }
 
-    .journey-stat.pending { background: rgba(255,212,59,0.15); color: var(--yellow); }
-    .journey-stat.completed { background: rgba(0,208,132,0.15); color: var(--green); }
-    .journey-stat.failed { background: rgba(255,71,87,0.15); color: var(--red); }
-    .journey-stat.other { background: rgba(77,171,247,0.15); color: var(--blue); }
-
-    .journey-rate {
-      font-size: 11px;
-      color: var(--text-dim);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .journey-rate-bar {
-      flex: 1;
-      height: 4px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 2px;
-      margin-left: 8px;
-      overflow: hidden;
-    }
-
-    .journey-rate-fill {
-      height: 100%;
-      border-radius: 2px;
-      background: var(--green);
-      transition: width 0.6s ease;
-    }
-
-    .journey-rate-fill.warn { background: var(--yellow); }
-    .journey-rate-fill.danger { background: var(--red); }
-    .fill-yellow { background: var(--yellow); }
-    .fill-red { background: var(--red); }
+    .journey-rate-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+    .journey-rate-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; background: linear-gradient(90deg, var(--green), #00f5a0); }
+    .journey-rate-fill.warn { background: linear-gradient(90deg, var(--yellow), #ffe066); }
+    .journey-rate-fill.danger { background: linear-gradient(90deg, var(--red), #ff6b7a); }
 
     /* ── Timeline ─────────────────────────────────── */
     .timeline {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px 24px;
+      border-radius: 16px;
+      padding: 22px 26px;
+      margin-bottom: 28px;
+    }
+    .timeline-title {
+      font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 2px;
+      font-weight: 700; margin-bottom: 18px;
+      font-family: var(--font-mono);
     }
 
-    .timeline-title { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .ping-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+    .ping-dot { width: 14px; height: 14px; border-radius: 4px; transition: all 0.3s; }
+    .ping-dot.up { background: var(--green); box-shadow: 0 0 8px rgba(0,212,132,0.5); }
+    .ping-dot.down { background: var(--red); box-shadow: 0 0 8px rgba(255,71,87,0.5); }
 
-    .ping-row {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .ping-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 3px;
-      transition: all 0.3s;
-    }
-
-    .ping-dot.up { background: var(--green); }
-    .ping-dot.down { background: var(--red); }
-    .ping-dot.waiting { background: var(--border); }
-
-    .ping-time {
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-top: 8px;
-    }
+    .ping-time { font-size: 11px; color: var(--text-dim); margin-top: 12px; font-family: var(--font-mono); }
 
     /* ── Error log ───────────────────────────────── */
     .error-log {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      background: var(--red-dim);
+      border: 1px solid rgba(255,71,87,0.2);
+      border-radius: 16px;
       padding: 20px 24px;
-      margin-top: 16px;
+      margin-bottom: 20px;
     }
-
+    .error-title {
+      font-size: 11px; color: var(--red);
+      text-transform: uppercase; letter-spacing: 2px;
+      font-weight: 700; margin-bottom: 14px;
+      font-family: var(--font-mono);
+    }
     .log-entry {
-      font-size: 12px;
-      color: var(--text-dim);
-      padding: 4px 0;
+      font-size: 12px; color: var(--text-dim);
+      padding: 5px 0;
       border-bottom: 1px solid rgba(255,255,255,0.04);
-      display: flex;
-      gap: 12px;
+      display: flex; gap: 12px; font-family: var(--font-mono);
     }
-
-    .log-time { color: var(--blue); flex-shrink: 0; }
-    .log-msg { color: var(--red); }
+    .log-time { color: var(--red); flex-shrink: 0; }
+    .log-msg { color: var(--text-dim); word-break: break-all; }
 
     /* ── Footer ─────────────────────────────────── */
     .footer {
-      margin-top: 28px;
+      margin-top: 20px;
       text-align: center;
       font-size: 11px;
-      color: var(--text-dim);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
     }
 
-    /* ── Animations ──────────────────────────────── */
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    .card, .metric-card, .timeline, .status-bar { animation: fadeIn 0.4s ease both; }
-    .status-bar { animation-delay: 0.05s; }
-    .components .card:nth-child(1) { animation-delay: 0.1s; }
-    .components .card:nth-child(2) { animation-delay: 0.15s; }
-    .components .card:nth-child(3) { animation-delay: 0.2s; }
-    .components .card:nth-child(4) { animation-delay: 0.25s; }
-    .journey-card { animation: fadeIn 0.4s ease both; }
-    .journey-card:nth-child(1) { animation-delay: 0.05s; }
-    .journey-card:nth-child(2) { animation-delay: 0.10s; }
-    .journey-card:nth-child(3) { animation-delay: 0.15s; }
-    .journey-card:nth-child(4) { animation-delay: 0.20s; }
-    .journey-card:nth-child(5) { animation-delay: 0.25s; }
-    .journey-card:nth-child(6) { animation-delay: 0.30s; }
+    /* ── Flash animation ─────────────────────────── */
+    @keyframes flash {
+      0%   { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+      50%  { color: var(--green); text-shadow: 0 0 10px var(--green); }
+      100% { color: inherit; text-shadow: none; }
+    }
+    .flash { animation: flash 0.7s ease; }
+
+    /* ── Entrance animations ────────────────────── */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+
+    .hero-bar   { animation: slideUp 0.5s ease both; }
+    .components .card { animation: slideUp 0.4s ease both; }
+    .metrics-grid .metric-card { animation: slideUp 0.4s ease both; }
+    .journey-card { animation: slideUp 0.4s ease both; }
+    .timeline { animation: slideUp 0.4s ease both; }
+
+    .components .card:nth-child(1) { animation-delay: 0.08s; }
+    .components .card:nth-child(2) { animation-delay: 0.12s; }
+    .components .card:nth-child(3) { animation-delay: 0.16s; }
+    .components .card:nth-child(4) { animation-delay: 0.20s; }
+    .metrics-grid .metric-card:nth-child(1) { animation-delay: 0.10s; }
+    .metrics-grid .metric-card:nth-child(2) { animation-delay: 0.14s; }
+    .metrics-grid .metric-card:nth-child(3) { animation-delay: 0.18s; }
 
     /* ── Responsive ──────────────────────────────── */
-    @media (max-width: 768px) {
-      .status-bar { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 900px) {
+      .hero-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
       body { padding: 16px; }
+      .hero-bar { grid-template-columns:1fr 1fr; padding: 20px; }
     }
   </style>
 </head>
@@ -382,71 +445,76 @@
       <div class="logo-icon">💳</div>
       <div class="logo-text">
         <h1>SkyEye</h1>
-        <span>信用卡核心系统 · 本地开发环境监控</span>
+        <p>credit-card-core · dev monitor</p>
       </div>
     </div>
     <div class="header-actions">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        LIVE
+      </div>
       <button class="refresh-btn" id="refreshBtn" onclick="toggleAutoRefresh()">
-        <span class="dot"></span>
-        <span id="refreshLabel">自动刷新 5s</span>
+        <div class="dot"></div>
+        <span id="refreshLabel">5s</span>
       </button>
     </div>
   </div>
 
-  <!-- Status Bar -->
-  <div class="status-bar" id="statusBar">
+  <!-- Hero Status Bar -->
+  <div class="hero-bar" id="statusBar">
     <div class="stat">
       <div class="stat-label">系统状态</div>
-      <div class="stat-value" id="sysStatus">...</div>
+      <div class="stat-value neutral" id="sysStatus">...</div>
+      <div class="stat-sub" id="val-app-status">加载中</div>
     </div>
     <div class="stat">
       <div class="stat-label">启动时间</div>
-      <div class="stat-value" id="startTime" style="font-size:18px">...</div>
+      <div class="stat-value neutral" id="startTime" style="font-size:20px">...</div>
     </div>
     <div class="stat">
       <div class="stat-label">运行时长</div>
-      <div class="stat-value" id="uptime" style="font-size:18px">...</div>
+      <div class="stat-value neutral" id="uptime" style="font-size:20px">...</div>
     </div>
     <div class="stat">
       <div class="stat-label">账户总数</div>
-      <div class="stat-value" id="accountCount">...</div>
+      <div class="stat-value neutral" id="accountCount">...</div>
     </div>
   </div>
 
   <!-- Components -->
-  <div class="section-title">组件状态</div>
+  <div class="section-title">基础设施</div>
   <div class="components">
 
-    <!-- 核心服务 -->
-    <div class="card" data-comp="app">
+    <!--核心服务 -->
+    <div class="card up" data-comp="app">
       <div class="card-header">
         <div class="card-name"><span class="icon">🌐</span>信用卡核心服务</div>
         <span class="badge up" id="badge-app">UP</span>
       </div>
       <div class="card-body">
-        <div class="row"><span class="row-label">地址</span><span class="row-value">https://localhost:8080</span></div>
-        <div class="row"><span class="row-label">状态</span><span class="row-value" id="val-app-status">UP</span></div>
-        <div class="row"><span class="row-label">JVM 内存</span><span class="row-value" id="val-jvm-used">-</span></div>
-        <div class="row"><span class="row-label">最大内存</span><span class="row-value" id="val-jvm-max">-</span></div>
+        <div class="row"><span class="row-label">端点</span><span class="row-value">https://localhost:8080</span></div>
+        <div class="row"><span class="row-label">状态</span><span class="row-value" id="val-app-status2">UP</span></div>
+        <div class="row"><span class="row-label">JVM 已用</span><span class="row-value" id="val-jvm-used">—</span></div>
+        <div class="row"><span class="row-label">JVM 最大</span><span class="row-value" id="val-jvm-max">—</span></div>
       </div>
     </div>
 
     <!-- H2 数据库 -->
-    <div class="card" data-comp="db">
+    <div class="card up" data-comp="db">
       <div class="card-header">
-        <div class="card-name"><span class="icon">🗄️</span>H2 数据库（开发）</div>
+        <div class="card-name"><span class="icon">🗄️</span>H2 数据库</div>
         <span class="badge up" id="badge-db">UP</span>
       </div>
       <div class="card-body">
         <div class="row"><span class="row-label">类型</span><span class="row-value">H2 In-Memory</span></div>
         <div class="row"><span class="row-label">方言</span><span class="row-value">PostgreSQL 兼容</span></div>
-        <div class="row"><span class="row-label">DDL 模式</span><span class="row-value">create（重启重置）</span></div>
+        <div class="row"><span class="row-label">DDL</span><span class="row-value">create · 重启重置</span></div>
         <div class="row"><span class="row-label">状态</span><span class="row-value" id="val-db-status">UP</span></div>
       </div>
     </div>
 
     <!-- Redis -->
-    <div class="card" data-comp="redis">
+    <div class="card up" data-comp="redis">
       <div class="card-header">
         <div class="card-name"><span class="icon">⚡</span>Redis 缓存</div>
         <span class="badge up" id="badge-redis">UP</span>
@@ -454,14 +522,13 @@
       <div class="card-body">
         <div class="row"><span class="row-label">地址</span><span class="row-value">localhost:6379</span></div>
         <div class="row"><span class="row-label">状态</span><span class="row-value" data-field="redis-status">已连接</span></div>
-        <div class="row"><span class="row-label">版本</span><span class="row-value" data-field="redis-ver">-</span></div>
-        <div class="row"><span class="row-label">用途</span><span class="row-value">额度快照缓存</span></div>
-        <div class="row"><span class="row-label">淘汰策略</span><span class="row-value">allkeys-lru</span></div>
+        <div class="row"><span class="row-label">版本</span><span class="row-value" data-field="redis-ver">—</span></div>
+        <div class="row"><span class="row-label">用途</span><span class="row-value">额度快照 · 幂等</span></div>
       </div>
     </div>
 
     <!-- Kafka -->
-    <div class="card" data-comp="kafka">
+    <div class="card up" data-comp="kafka">
       <div class="card-header">
         <div class="card-name"><span class="icon">📨</span>Kafka 事件流</div>
         <span class="badge up" id="badge-kafka">UP</span>
@@ -469,10 +536,11 @@
       <div class="card-body">
         <div class="row"><span class="row-label">地址</span><span class="row-value">localhost:9092</span></div>
         <div class="row"><span class="row-label">状态</span><span class="row-value" id="val-kafka-status">已连接</span></div>
-        <div class="row"><span class="row-label">用途</span><span class="row-value">5条业务事件流</span></div>
-        <div class="row"><span class="row-label">Topics</span><span class="row-value" id="val-kafka-topics">credit-card.*</span></div>
+        <div class="row"><span class="row-label">Topics</span><span class="row-value">5 条业务事件流</span></div>
+        <div class="row"><span class="row-label">Cluster</span><span class="row-value" id="val-kafka-cluster">—</span></div>
       </div>
     </div>
+
   </div>
 
   <!-- Metrics -->
@@ -482,36 +550,21 @@
       <div class="metric-label">JVM 堆内存</div>
       <div class="metric-row">
         <span class="metric-name">已使用</span>
-        <span class="metric-val" id="memUsed">-</span>
+        <span class="metric-val" id="memUsed">—</span>
       </div>
       <div class="metric-row">
         <span class="metric-name">最大</span>
-        <span class="metric-val" id="memMax">-</span>
+        <span class="metric-val" id="memMax">—</span>
       </div>
       <div class="progress-bar">
         <div class="progress-fill fill-green" id="memFill" style="width:0%"></div>
       </div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">系统信息</div>
-      <div class="metric-row">
-        <span class="metric-name">健康状态</span>
-        <span class="metric-val" id="val-health-status" style="color:var(--green)">UP</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-name">账户数</span>
-        <span class="metric-val" id="accountCount">0</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-name">Redis</span>
-        <span class="metric-val" id="val-redis-status" style="color:var(--green)">UP</span>
-      </div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">API 响应</div>
+      <div class="metric-label">健康检查</div>
       <div class="metric-row">
         <span class="metric-name">/actuator/health</span>
-        <span class="metric-val" id="val-api-health" style="color:var(--green)">200 OK</span>
+        <span class="metric-val" id="val-api-health" style="color:var(--green)">—</span>
       </div>
       <div class="metric-row">
         <span class="metric-name">/api/auth/login</span>
@@ -520,6 +573,21 @@
       <div class="metric-row">
         <span class="metric-name">/api/v1/accounts</span>
         <span class="metric-val" style="color:var(--green)">200 OK</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">账户统计</div>
+      <div class="metric-row">
+        <span class="metric-name">总账户数</span>
+        <span class="metric-val" id="accountCount2">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Redis 状态</span>
+        <span class="metric-val" id="val-redis-status" style="color:var(--green)">UP</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Kafka 状态</span>
+        <span class="metric-val" id="val-kafka-status2" style="color:var(--green)">UP</span>
       </div>
     </div>
   </div>
@@ -539,12 +607,12 @@
 
   <!-- Error log -->
   <div class="error-log" id="errorLog" style="display:none">
-    <div class="timeline-title">最近错误</div>
+    <div class="error-title">⚠️ 异常组件</div>
     <div id="logEntries"></div>
   </div>
 
   <div class="footer">
-    Minerva Dev Dashboard · 自动刷新间隔 5s · 最后更新: <span id="lastUpdate">--</span>
+    SkyEye · credit-card-core · Minerva Dev Dashboard · 更新: <span id="lastUpdate">—</span>
   </div>
 
 <script>
@@ -555,10 +623,7 @@ const PING_HISTORY_SIZE = 20;
 let pingHistory = [];
 let startTimeMs = Date.now();
 let autoRefresh = true;
-let countdown = 5;
 let fastTimer = null, fullTimer = null;
-
-//缓存（避免每5秒重新获取）
 let cachedToken = '';
 let cachedAcctCount = null;
 let prevUsed = null, prevMax = null;
@@ -581,14 +646,13 @@ function formatBytes(b) {
   return (b/1e3).toFixed(0)+' KB';
 }
 
-// 值变化时闪动画
 function flashUpdate(el, newVal) {
   if (!el || el.textContent === String(newVal)) return;
   el.textContent = newVal;
   el.classList.remove('flash');
-  void el.offsetWidth; // reflow触发重绘
+  void el.offsetWidth;
   el.classList.add('flash');
-  setTimeout(() => el.classList.remove('flash'), 600);
+  setTimeout(() => el.classList.remove('flash'), 700);
 }
 
 // ── Auth（只取一次）──────────────────────────────────
@@ -609,58 +673,80 @@ async function ensureToken() {
 // ── Light refresh：健康状态 + ping（每5秒）──────────────
 async function lightRefresh() {
   try {
-    const r = await fetch(`${API_BASE}/actuator/health`);
+    await ensureToken();
+    const headers = cachedToken
+      ? { 'Authorization': `Bearer ${cachedToken}` }
+      : {};
+    const r = await fetch(`${API_BASE}/actuator/health`, { headers });
     const health = await r.json();
     const statusOk = health.status === 'UP';
 
     // 系统状态
-    const sysEl = $('sysStatus');
     const newStatus = health.status;
+    const sysEl = $('sysStatus');
     if (prevStatus !== newStatus) {
       prevStatus = newStatus;
       sysEl.textContent = newStatus;
       sysEl.className = 'stat-value ' + (statusOk ? 'up' : 'down');
-      flashUpdate($('val-app-status'), newStatus);
-      flashUpdate($('val-health-status'), newStatus);
+
+      // Hero bar card class
+      const heroCard = document.querySelector('[data-comp="app"]');
+      if (heroCard) {
+        heroCard.className = 'card ' + (statusOk ? 'up' : 'down');
+        flashUpdate(heroCard.querySelector('.badge') || $('badge-app'), newStatus);
+      }
+
+      flashUpdate($('val-app-status'), statusOk ? '全部组件正常' : '部分组件异常');
+      flashUpdate($('val-app-status2'), newStatus);
+
       const badgeEl = $('badge-app');
-      if (badgeEl) { badgeEl.textContent = newStatus; badgeEl.className = 'badge ' + (statusOk ? 'up' : 'down'); }
-      const apiHealthEl = $('val-api-health');
-      if (apiHealthEl) { apiHealthEl.textContent = statusOk ? '200 OK' : 'DOWN'; apiHealthEl.style.color = statusOk ? 'var(--green)' : 'var(--red)'; }
+      if (badgeEl) {
+        badgeEl.textContent = newStatus;
+        badgeEl.className = 'badge ' + (statusOk ? 'up' : 'down');
+      }
     }
 
-    // Redis badge
-    const redisStatus = health.components?.redis?.status || null;
-    if (prevRedis !== redisStatus) {
-      prevRedis = redisStatus;
-      const badge = document.querySelector('[data-comp="redis"] .badge');
-      const card = document.querySelector('[data-comp="redis"]');
-      if (badge) {
-        badge.textContent = redisStatus === 'UP' ? 'UP' : (redisStatus || 'DOWN');
-        badge.className = 'badge ' + (redisStatus === 'UP' ? 'up' : 'down');
-      }
-      if (card) {
-        const statusEl = card.querySelector('[data-field="redis-status"]');
-        if (statusEl) {
-          statusEl.textContent = redisStatus === 'UP' ? '已连接' : (redisStatus === 'DOWN' ? '连接失败' : '未知');
-        }
-        const verEl = card.querySelector('[data-field="redis-ver"]');
-        if (verEl) verEl.textContent = health.components?.redis?.details?.version || '-';
-      }
+    // 更新各组件 badge
+    updateBadge('badge-db', health.components?.db?.status);
+    updateBadge('badge-redis', health.components?.redis?.status);
+    updateBadge('badge-kafka', health.components?.kafka?.status);
 
-      // Kafka
-      const kafkaStatus = health.components?.kafka?.status;
-      const kafkaBadge = $('badge-kafka');
-      const kafkaCard = document.querySelector('[data-comp="kafka"]');
-      if (kafkaBadge) {
-        kafkaBadge.textContent = kafkaStatus === 'UP' ? 'UP' : (kafkaStatus || 'DOWN');
-        kafkaBadge.className = 'badge ' + (kafkaStatus === 'UP' ? 'up' : 'down');
-      }
-      if (kafkaCard) {
-        const statusEl = kafkaCard.querySelector('#val-kafka-status');
-        if (statusEl) {
-          statusEl.textContent = kafkaStatus === 'UP' ? '已连接' : (kafkaStatus === 'DOWN' ? '连接失败' : '未知');
-        }
-      }
+    // Kafka cluster ID
+    const kafkaCluster = health.components?.kafka?.details?.clusterId;
+    if (kafkaCluster) {
+      flashUpdate($('val-kafka-cluster'), kafkaCluster.substring(0,12) + '…');
+    }
+
+    // Redis 详情
+    const redisCard = document.querySelector('[data-comp="redis"]');
+    if (redisCard) {
+      const verEl = redisCard.querySelector('[data-field="redis-ver"]');
+      if (verEl) verEl.textContent = health.components?.redis?.details?.version || '—';
+      const statusEl = redisCard.querySelector('[data-field="redis-status"]');
+      if (statusEl) statusEl.textContent = health.components?.redis?.status === 'UP' ? '已连接' : '连接失败';
+    }
+
+    // API 健康状态
+    const apiHealthEl = $('val-api-health');
+    if (apiHealthEl) {
+      apiHealthEl.textContent = statusOk ? '200 OK' : 'DOWN';
+      apiHealthEl.style.color = statusOk ? 'var(--green)' : 'var(--red)';
+    }
+
+    // Kafka 状态 metric
+    const kafkaStatusEl = $('val-kafka-status2');
+    if (kafkaStatusEl) {
+      const ks = health.components?.kafka?.status;
+      kafkaStatusEl.textContent = ks || '—';
+      kafkaStatusEl.style.color = ks === 'UP' ? 'var(--green)' : 'var(--red)';
+    }
+
+    // Redis metric
+    const redisMetricEl = $('val-redis-status');
+    if (redisMetricEl) {
+      const rs = health.components?.redis?.status;
+      redisMetricEl.textContent = rs || '—';
+      redisMetricEl.style.color = rs === 'UP' ? 'var(--green)' : 'var(--red)';
     }
 
     // Ping 历史
@@ -668,30 +754,39 @@ async function lightRefresh() {
     if (pingHistory.length > PING_HISTORY_SIZE) pingHistory.shift();
     updatePingDots();
 
-    // 运行时长（每5秒都更新）
+    // 运行时长
     $('uptime').textContent = formatUptime(Date.now() - startTimeMs);
 
     // 错误日志
-    if (!statusOk) {
+    const errEntries = Object.entries(health.components || {})
+      .filter(([,v]) => v.status !== 'UP');
+    if (errEntries.length > 0) {
       $('errorLog').style.display = 'block';
-      const errComp = Object.entries(health.components || {})
-        .filter(([,v]) => v.status !== 'UP')
-        .map(([k,v]) => `<div class="log-entry"><span class="log-time">${k}</span><span class="log-msg">${v.status}: ${v.details || ''}</span></div>`)
+      $('logEntries').innerHTML = errEntries
+        .map(([k,v]) => `<div class="log-entry"><span class="log-time">${k}</span><span class="log-msg">${v.status}: ${JSON.stringify(v.details || '')}</span></div>`)
         .join('');
-      $('logEntries').innerHTML = errComp;
     } else {
       $('errorLog').style.display = 'none';
     }
   } catch(e) {
-    // 网络错误
     pingHistory.push(false);
     if (pingHistory.length > PING_HISTORY_SIZE) pingHistory.shift();
     updatePingDots();
-    $('sysStatus').textContent = 'DOWN';
-    $('sysStatus').className = 'stat-value down';
+    const sysEl = $('sysStatus');
+    sysEl.textContent = 'DOWN';
+    sysEl.className = 'stat-value down';
+    $('val-app-status').textContent = '网络异常';
   }
 
   $('lastUpdate').textContent = new Date().toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function updateBadge(id, status) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const ok = status === 'UP';
+  el.textContent = status || 'DOWN';
+  el.className = 'badge ' + (ok ? 'up' : 'down');
 }
 
 // ── Full refresh：JVM +账户数（每60秒）──────────────
@@ -700,7 +795,6 @@ async function fullRefresh() {
   const token = cachedToken;
 
   try {
-    // JVM metrics
     const r1 = await fetch(`${API_BASE}/actuator/metrics/jvm.memory.used`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -713,20 +807,15 @@ async function fullRefresh() {
 
     const usedPct = max > 0 ? Math.min((used/max)*100,100) : 0;
     const fillClass = usedPct > 85 ? 'fill-red' : usedPct > 70 ? 'fill-yellow' : 'fill-green';
-    const fillEl = $('memFill');
-    const usedEl = $('memUsed');
-    const maxEl = $('memMax');
 
-    flashUpdate(usedEl, formatBytes(used));
-    if (prevUsed !== used) { prevUsed = used; if (fillEl) fillEl.style.width = usedPct+'%'; }
-    flashUpdate(maxEl, formatBytes(max));
-    if (prevMax !== max) { prevMax = max; if (fillEl) fillEl.className = 'progress-fill ' + fillClass; }
+    flashUpdate($('memUsed'), formatBytes(used));
+    if (prevUsed !== used) { prevUsed = used; $('memFill').style.width = usedPct+'%'; }
+    flashUpdate($('memMax'), formatBytes(max));
+    if (prevMax !== max) { prevMax = max; $('memFill').className = 'progress-fill ' + fillClass; }
 
-    // 也更新组件卡片的 JVM 值
     flashUpdate($('val-jvm-used'), formatBytes(used));
     flashUpdate($('val-jvm-max'), formatBytes(max));
 
-    // 账户数
     const r3 = await fetch(`${API_BASE}/api/v1/accounts`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -736,10 +825,10 @@ async function fullRefresh() {
       if (cachedAcctCount !== cnt) {
         cachedAcctCount = cnt;
         flashUpdate($('accountCount'), cnt);
+        flashUpdate($('accountCount2'), cnt);
       }
     }
 
-    // Journey 数据
     const r4 = await fetch(`${API_BASE}/api/v1/metrics/journeys`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -750,82 +839,67 @@ async function fullRefresh() {
   } catch(e) { /* ignore */ }
 }
 
-// ── Journey 渲染（增量）──────────────────────────
+// ── Journey 渲染 ─────────────────────────────────────
 function renderJourneys(journeys) {
   const container = $('journeyGrid');
-  const entries = Object.entries(journeys);
-  const existingCards = {};
-  container.querySelectorAll('[data-journey]').forEach(el => {
-    existingCards[el.dataset.journey] = el;
-  });
+  const existing = {};
+  container.querySelectorAll('[data-journey]').forEach(el => { existing[el.dataset.journey] = el; });
 
-  entries.forEach(([key, j]) => {
+  Object.entries(journeys).forEach(([key, j]) => {
     const id = key.replace(/[^\w]/g, '_');
     const rate = parseFloat(j.successRate || 0);
     const rateClass = rate >= 90 ? '' : rate >= 70 ? ' warn' : ' danger';
     const ratePct = rate.toFixed(1) + '%';
 
-    // pending / completed / failed / other 统计
     const pending = parseInt(j.pending || 0);
     const completed = parseInt(j.completed || 0);
     const failed = parseInt(j.failed || 0) + parseInt(j.rejected || 0) + parseInt(j.expired || 0) + parseInt(j.cancelled || 0) + parseInt(j.reversed || 0);
-    const otherKeys = Object.keys(j).filter(k => !['icon','description','pending','completed','failed','rejected','expired','cancelled','reversed','total','successRate','statusBreakdown'].includes(k));
-    const other = otherKeys.length;
 
-    let cardHTML = `
+    let html = `
       <div class="journey-card" data-journey="${id}">
         <div class="journey-header">
           <span class="journey-icon">${j.icon || '📦'}</span>
           <span class="journey-name">${key}</span>
         </div>
-        <div class="journey-desc">${j.description || ''}</div>
+        <div class="journey-desc">${j.description || '暂无描述'}</div>
         <div class="journey-stats">
-          ${pending > 0 ? `<span class="journey-stat pending">⏳ ${pending}</span>` : ''}
+          ${pending > 0 ? `<span class="journey-statpending">⏳ ${pending}</span>` : ''}
           ${completed > 0 ? `<span class="journey-stat completed">✅ ${completed}</span>` : ''}
           ${failed > 0 ? `<span class="journey-stat failed">❌ ${failed}</span>` : ''}
           ${(pending === 0 && completed === 0 && failed === 0) ? `<span class="journey-stat other">— 暂无数据</span>` : ''}
         </div>
         <div class="journey-rate">
-          <span>成功率 ${ratePct}</span>
+          <span class="journey-rate-label">成功率</span>
+          <span class="journey-rate-pct" style="color:${rate >= 90 ? 'var(--green)' : rate >= 70 ? 'var(--yellow)' : 'var(--red)'}">${ratePct}</span>
           <div class="journey-rate-bar">
             <div class="journey-rate-fill${rateClass}" style="width:${rate}%"></div>
           </div>
         </div>
       </div>`;
 
-    if (existingCards[id]) {
-      // 增量更新
-      const oldCard = existingCards[id];
-      const newCard = (new DOMParser()).parseFromString(cardHTML, 'text/html').querySelector('.journey-card');
-      // 只更新统计和进度条，不重绘整个卡
-      const oldStats = oldCard.querySelector('.journey-stats');
-      const newStats = newCard.querySelector('.journey-stats');
-      if (oldStats.innerHTML !== newStats.innerHTML) {
-        oldStats.innerHTML = newStats.innerHTML;
-        oldCard.querySelectorAll('.journey-stat').forEach(el => {
+    if (existing[id]) {
+      const old = existing[id];
+      const newStats = (new DOMParser()).parseFromString(html, 'text/html')
+        .querySelector('.journey-card .journey-stats').innerHTML;
+      if (old.querySelector('.journey-stats').innerHTML !== newStats) {
+        old.querySelector('.journey-stats').innerHTML = newStats;
+        old.querySelectorAll('.journey-stat').forEach(el => {
           el.classList.add('flash');
-          setTimeout(() => el.classList.remove('flash'), 600);
+          setTimeout(() => el.classList.remove('flash'), 700);
         });
       }
-      const fill = oldCard.querySelector('.journey-rate-fill');
-      const newFill = newCard.querySelector('.journey-rate-fill');
-      if (fill && newFill && fill.style.width !== newFill.style.width) {
-        fill.style.width = newFill.style.width;
-        fill.className = newFill.className;
-      }
     } else {
-      container.insertAdjacentHTML('beforeend', cardHTML);
+      container.insertAdjacentHTML('beforeend', html);
     }
   });
 }
 
-// ── Ping 点状图（增量更新）──────────────────────────
+// ── Ping 点状图 ───────────────────────────────────────
 function updatePingDots() {
   const container = $('pingRow');
   const dots = container.querySelectorAll('.ping-dot');
   const len = pingHistory.length;
 
-  // 已有足够的点，只更新最后一个
   if (dots.length === PING_HISTORY_SIZE) {
     const last = dots[len - 1];
     if (last) {
@@ -834,30 +908,24 @@ function updatePingDots() {
       last.title = ok ? '健康' : '失败';
     }
   } else {
-    // 初始化时生成所有点
-    container.innerHTML = pingHistory.map((ok, i) =>
+    container.innerHTML = pingHistory.map(ok =>
       `<div class="ping-dot ${ok ? 'up' : 'down'}" title="${ok ? '健康' : '失败'}"></div>`
     ).join('');
   }
 
-  const rate = pingHistory.filter(Boolean).length;
+  const ok = pingHistory.filter(Boolean).length;
   $('pingTime').textContent =
-    `最新: ${new Date().toLocaleTimeString('zh-CN')} · 成功率: ${(rate/len*100).toFixed(0)}%`;
+    `最新: ${new Date().toLocaleTimeString('zh-CN')} · 成功率 ${(ok/len*100).toFixed(0)}% · ${ok}/${len} 次健康`;
 }
 
 // ── Boot ────────────────────────────────────────────────
 async function init() {
   $('startTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-
-  // 首次全量获取
   await ensureToken();
   await lightRefresh();
   await fullRefresh();
 
-  // 每5 秒：轻量刷新（健康 + ping）
   fastTimer = setInterval(lightRefresh, 5000);
-
-  // 每 60 秒：完整刷新（JVM + 账户）
   fullTimer = setInterval(fullRefresh, 60000);
 }
 
@@ -866,12 +934,12 @@ function toggleAutoRefresh() {
   const btn = $('refreshBtn');
   if (autoRefresh) {
     btn.classList.remove('paused');
-    btn.querySelector('#refreshLabel').textContent = '自动刷新 5s';
+    $('refreshLabel').textContent = '5s';
     fastTimer = setInterval(lightRefresh, 5000);
     fullTimer = setInterval(fullRefresh, 60000);
   } else {
     btn.classList.add('paused');
-    btn.querySelector('#refreshLabel').textContent = '已暂停';
+    $('refreshLabel').textContent = '暂停';
     clearInterval(fastTimer);
     clearInterval(fullTimer);
   }
