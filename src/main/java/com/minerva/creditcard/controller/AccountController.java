@@ -51,6 +51,12 @@ public class AccountController {
      * 查询账户
      * GET /api/v1/accounts/{account_id}
      */
+    @GetMapping
+    public ResponseEntity<?> listAccounts() {
+        log.info("REST: listAccounts");
+        return ResponseEntity.ok(accountService.listAllAccounts());
+    }
+
     @GetMapping("/{account_id}")
     public ResponseEntity<AccountResponse> getAccount(
             @PathVariable("account_id") UUID accountId) {

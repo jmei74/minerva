@@ -37,8 +37,50 @@ spring:
           max-active: 50
           max-idle: 10
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+      group-id: credit-card-core
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: java.util.Map
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    template:
+      default-topic: credit-card.transaction
+
 server:
   port: 8080
+  ssl:
+    key-store: classpath:keystore.p12
+    key-store-password: changeit
+    key-store-type: PKCS12
+    key-alias: minerva
+  http2:
+    enabled: true
+
+# Actuator 健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+    kafka:
+      enabled: true
 
 logging:
   level:
@@ -51,16 +93,12 @@ logging:
 aws:
   region: ${AWS_REGION:ap-southeast-1}
   kms:
-    key-id: ${KMS_KEY_ID:}
+    key-id: ${KMS_KEY_ID:dev-key-placeholder-not-used}
 
 # JWT Configuration
 jwt:
   secret: ${JWT_SECRET:minerva-credit-card-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
-# Security
-spring:
-  security:
-    user:
-      name: admin
-      password: admin123
+# HTTPS（SkyEye 通过 HTTPS 访问）
+# SSL 配置已合并到上方 server:块

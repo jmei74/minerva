@@ -10,12 +10,15 @@
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/domain/enums/AuthorizationStatus.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/exception/BusinessRuleException.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/domain/enums/TransactionStatus.java
+/Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/config/KafkaHealthIndicator.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/exception/InsufficientCreditException.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/dto/LimitAdjustmentRequest.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/util/CardEncryptionUtil.java
+/Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/service/KafkaEventService.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/domain/entity/CreditLimitAdjustment.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/domain/entity/Transaction.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/service/AccountService.java
+/Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/controller/MetricsController.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/controller/AuthController.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/config/RedisConfig.java
 /Users/jmei/projects/minerva/src/main/java/com/minerva/creditcard/CreditCardApplication.java
