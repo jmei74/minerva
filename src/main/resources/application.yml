@@ -47,6 +47,22 @@ server:
   http2:
     enabled: true
 
+# Actuator 健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  health:
+    redis:
+      enabled: false
+    db:
+      enabled: true
+
 logging:
   level:
     com.minerva: DEBUG
