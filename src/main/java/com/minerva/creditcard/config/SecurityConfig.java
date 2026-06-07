@@ -11,9 +11,13 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * 安全配置
@@ -62,6 +66,9 @@ public class SecurityConfig {
                         // 开发环境临时开放文档
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
+                        // SkyEye 静态面板
+                        .requestMatchers("/skyeye.html", "/static/**").permitAll()
+
                         // 所有 API 需要认证
                         .requestMatchers("/api/**").authenticated()
 
@@ -70,6 +77,9 @@ public class SecurityConfig {
 
                 // 添加 JWT 过滤器（在 UsernamePasswordAuthenticationFilter 之前）
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // CORS（允许本地 file:// 页面访问 Dashboard）
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // 异常处理
                 .exceptionHandling(ex -> ex
@@ -89,6 +99,19 @@ public class SecurityConfig {
                         }));
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("https://localhost:8080"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     private byte[] deriveKey(String keyId) {

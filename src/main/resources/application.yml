@@ -39,6 +39,13 @@ spring:
 
 server:
   port: 8080
+  ssl:
+    key-store: classpath:keystore.p12
+    key-store-password: changeit
+    key-store-type: PKCS12
+    key-alias: minerva
+  http2:
+    enabled: true
 
 logging:
   level:
@@ -58,9 +65,5 @@ jwt:
   secret: ${JWT_SECRET:minerva-credit-card-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
-# Security
-spring:
-  security:
-    user:
-      name: admin
-      password: admin123
+# HTTPS（SkyEye 通过 HTTPS 访问）
+# SSL 配置已合并到上方 server:块
