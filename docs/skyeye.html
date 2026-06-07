@@ -475,10 +475,11 @@ function getComponents(health, metrics, token) {
       name: 'Redis 缓存',
       icon: '⚡',
       status: redisStatus === 'UP' ? 'up' : (redisStatus === 'UNKNOWN' ? 'unknown' : 'down'),
-      badge: redisStatus === 'UP' ? 'UP' : (redisStatus === 'UNKNOWN' ? '未配置' : 'DOWN'),
+      badge: redisStatus === 'UP' ? 'UP' : (redisStatus === 'UNKNOWN' ? '未知' : 'DOWN'),
       details: [
         { label: '地址', value: 'localhost:6379' },
-        { label: '状态', value: redisStatus === 'UP' ? '已连接' : '未运行（本地无 Docker）' },
+        { label: '状态', value: redisStatus === 'UP' ? '已连接' : redisStatus === 'DOWN' ? '连接失败' : '未知' },
+        { label: '版本', value: health.components?.redis?.details?.version || '-' },
         { label: '用途', value: '额度快照缓存' },
         { label: '淘汰策略', value: 'allkeys-lru' },
       ]
