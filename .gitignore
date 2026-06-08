@@ -1,0 +1,35 @@
+# ── Build outputs ──────────────────────────────────────
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.rar
+
+# ── IDE ───────────────────────────────────────────────
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.vscode/
+
+# ── OS ────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ── Logs ─────────────────────────────────────────────
+*.log
+logs/
+
+# ── Credentials ───────────────────────────────────────
+*.pem
+*.p12
+*.jks
+.env
+*.env.local
+keystore.p12

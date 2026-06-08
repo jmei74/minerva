@@ -11,9 +11,13 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * 安全配置
@@ -32,7 +36,7 @@ public class SecurityConfig {
     @Value("${aws.kms.key-id:}")
     private String kmsKeyId;
 
-    @Value("${jwt.secret:minerva-credit-card-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}")
+    @Value("${jwt.secret:}")
     private String jwtSecret;
 
     @Bean
@@ -62,7 +66,11 @@ public class SecurityConfig {
                         // 开发环境临时开放文档
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
-                        // 所有 API 需要认证
+                        // SkyEye 静态面板
+                        .requestMatchers("/skyeye.html", "/static/**").permitAll()
+
+                        // Journey 监控数据（需要认证）
+                        .requestMatchers("/api/v1/metrics/**").authenticated()
                         .requestMatchers("/api/**").authenticated()
 
                         // 其他全部拒绝
@@ -70,6 +78,9 @@ public class SecurityConfig {
 
                 // 添加 JWT 过滤器（在 UsernamePasswordAuthenticationFilter 之前）
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // CORS（允许本地 file:// 页面访问 Dashboard）
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // 异常处理
                 .exceptionHandling(ex -> ex
@@ -91,10 +102,29 @@ public class SecurityConfig {
         return http.build();
     }
 
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("https://localhost:8080"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
     private byte[] deriveKey(String keyId) {
         if (keyId == null || keyId.isBlank()) {
-            return "minerva-credit-card-key-32bytes!!".getBytes(StandardCharsets.UTF_8);
+            throw new IllegalStateException(
+                "FATAL: AWS KMS key ID not configured. Set aws.kms.key-id environment variable. " +
+                "Card encryption requires keys from AWS KMS - hardcoded fallback is not permitted."
+            );
         }
+        // TODO: Replace with actual AWS KMS decryption call:
+        // byte[] raw = kmsClient.decrypt(keyId);
+        // For now, derive from key ID (production must use KMS)
         byte[] raw = keyId.getBytes(StandardCharsets.UTF_8);
         byte[] key = new byte[32];
         System.arraycopy(raw, 0, key, 0, Math.min(raw.length, 32));

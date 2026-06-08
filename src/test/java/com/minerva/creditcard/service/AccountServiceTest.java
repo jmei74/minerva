@@ -43,6 +43,9 @@ class AccountServiceTest {
     @Mock
     private CreditEngine creditEngine;
 
+    @Mock
+    private KafkaEventService kafkaEventService;
+
     private AccountService accountService;
 
     private CardEncryptionUtil encryptionUtil;
@@ -54,7 +57,7 @@ class AccountServiceTest {
         encryptionUtil = new CardEncryptionUtil(
                 "minerva-credit-card-key-32bytes!".getBytes());
         accountService = new AccountService(
-                accountRepository, adjustmentRepository, creditEngine, encryptionUtil);
+                accountRepository, adjustmentRepository, creditEngine, encryptionUtil, kafkaEventService);
 
         testAccountId = UUID.randomUUID();
         testAccount = new Account();

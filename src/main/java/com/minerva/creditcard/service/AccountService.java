@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -38,15 +39,28 @@ public class AccountService {
     private final CreditLimitAdjustmentRepository adjustmentRepository;
     private final CreditEngine creditEngine;
     private final CardEncryptionUtil cardEncryptionUtil;
+    private final KafkaEventService kafkaEventService;
 
     public AccountService(AccountRepository accountRepository,
-                         CreditLimitAdjustmentRepository adjustmentRepository,
-                         CreditEngine creditEngine,
-                         CardEncryptionUtil cardEncryptionUtil) {
+                          CreditLimitAdjustmentRepository adjustmentRepository,
+                          CreditEngine creditEngine,
+                          CardEncryptionUtil cardEncryptionUtil,
+                          KafkaEventService kafkaEventService) {
         this.accountRepository = accountRepository;
         this.adjustmentRepository = adjustmentRepository;
         this.creditEngine = creditEngine;
         this.cardEncryptionUtil = cardEncryptionUtil;
+        this.kafkaEventService = kafkaEventService;
+    }
+
+    /**
+     * 列出所有账户（Dashboard 用）
+     */
+    @Transactional(readOnly = true)
+    public List<AccountResponse> listAllAccounts() {
+        return accountRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     /**
@@ -143,6 +157,16 @@ public class AccountService {
         // 刷新快照
         creditEngine.refreshSnapshot(saved);
 
+        // Kafka 事件
+        kafkaEventService.publishCreditLimitAdjustment(
+                adjustment.getAdjId().toString(),
+                accountId.toString(),
+                adjustment.getOldLimit().doubleValue(),
+                request.getNewLimit().doubleValue(),
+                request.getReason(),
+                adjustment.getStatus()
+        );
+
         log.info("Limit adjusted for account: {}, new available: {}",
                 accountId, saved.getAvailableAmount());
         return toResponse(saved);
@@ -161,6 +185,7 @@ public class AccountService {
         Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
 
+        AccountStatus currentStatus = account.getStatus();
         AccountStatus targetStatus = AccountStatus.valueOf(newStatus.toUpperCase());
 
         // 业务规则校验
@@ -176,6 +201,13 @@ public class AccountService {
 
         // 失效快照
         creditEngine.invalidateSnapshot(accountId);
+
+        // Kafka 事件
+        kafkaEventService.publishAccountStatusChange(
+                accountId.toString(),
+                currentStatus.name(),
+                targetStatus.name()
+        );
 
         log.info("Account status changed: {} -> {}", accountId, targetStatus);
         return toResponse(saved);

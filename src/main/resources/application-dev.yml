@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: credit-card-core
+
+  # PostgreSQL（本地开发）
+  datasource:
+    url: jdbc:postgresql://localhost:5432/creditcard_dev
+    username: dev
+    password: dev123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+
+  # Flyway migrations（V1 已手动执行，可改为自动）
+  flyway:
+    enabled: false
+
+  # Redis（本地没有就跳过）
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  # Kafka（本地）
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+      group-id: credit-card-dev
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    template:
+      default-topic: credit-card.transaction
+
+server:
+  port: ${SERVER_PORT:8080}
+  ssl:
+    enabled: false
+
+logging:
+  level:
+    com.minerva: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET:minerva-credit-card-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+# AWS（dev 不需要真实 KMS）
+aws:
+  region: ap-southeast-1
+  kms:
+    key-id: ${KMS_KEY_ID:dev-key-id}

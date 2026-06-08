@@ -24,10 +24,23 @@ public class JwtTokenProvider {
     private final long expirationMs;
 
     public JwtTokenProvider(
-            @Value("${jwt.secret:minerva-credit-card-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}") String secret,
+            @Value("${jwt.secret:}") String secret,
             @Value("${jwt.expiration-ms:86400000}") long expirationMs) {
-        // HS256 需要至少 256 位密钥
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        // Security: JWT secret must be provided via environment variable, no default allowed
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                "FATAL: JWT secret not configured. Set jwt.secret environment variable. " +
+                "Production deployment requires a secure secret (min 256 bits for HS256)."
+            );
+        }
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        // Security: Enforce minimum key length for HS256
+        if (secretBytes.length < 32) {
+            throw new IllegalStateException(
+                "FATAL: JWT secret too short. HS256 requires at least 256 bits (32 bytes)."
+            );
+        }
+        this.secretKey = Keys.hmacShaKeyFor(secretBytes);
         this.expirationMs = expirationMs;
     }
 

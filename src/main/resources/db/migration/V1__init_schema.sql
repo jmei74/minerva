@@ -7,13 +7,13 @@ CREATE TABLE IF NOT EXISTS account (
     account_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id         UUID NOT NULL,
     card_no_encrypted   VARCHAR(256) NOT NULL,
-    card_no_last4       CHAR(4) NOT NULL,
+    card_no_last4       VARCHAR(4) NOT NULL,
     credit_limit        DECIMAL(15,2) NOT NULL DEFAULT 0,
     temp_limit          DECIMAL(15,2) NOT NULL DEFAULT 0,
     used_amount         DECIMAL(15,2) NOT NULL DEFAULT 0,
     frozen_amount       DECIMAL(15,2) NOT NULL DEFAULT 0,
-    billing_day         SMALLINT NOT NULL CHECK (billing_day BETWEEN 1 AND 31),
-    due_days            SMALLINT NOT NULL DEFAULT 20,
+    billing_day         INTEGER NOT NULL CHECK (billing_day BETWEEN 1 AND 31),
+    due_days            INTEGER NOT NULL DEFAULT 20,
     over_limit_ratio    DECIMAL(5,4) NOT NULL DEFAULT 0.1000,
     status              VARCHAR(20) NOT NULL DEFAULT 'PENDING'
                         CHECK (status IN ('PENDING', 'ACTIVE', 'FROZEN', 'CLOSED')),
@@ -61,8 +61,8 @@ CREATE INDEX IF NOT EXISTS idx_txn_idempotency ON transaction(idempotency_key) W
 CREATE INDEX IF NOT EXISTS idx_txn_reference ON transaction(reference_no) WHERE reference_no IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_txn_settlement ON transaction(settlement_date) WHERE settlement_date IS NOT NULL;
 
--- 3. 授权表
-CREATE TABLE IF NOT EXISTS authorization (
+-- 3. 授权表（card_authorization 避免与 PostgreSQL 保留字冲突）
+CREATE TABLE IF NOT EXISTS card_authorization (
     auth_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id       UUID NOT NULL REFERENCES account(account_id),
     auth_code        VARCHAR(20) NOT NULL UNIQUE,
@@ -79,8 +79,8 @@ CREATE TABLE IF NOT EXISTS authorization (
     updated_at       TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_auth_account ON authorization(account_id);
-CREATE INDEX IF NOT EXISTS idx_auth_expire ON authorization(expire_time) WHERE status = 'PENDING';
+CREATE INDEX IF NOT EXISTS idx_auth_account ON card_authorization(account_id);
+CREATE INDEX IF NOT EXISTS idx_auth_expire ON card_authorization(expire_time) WHERE status = 'PENDING';
 
 -- 4. 额度调整记录表
 CREATE TABLE IF NOT EXISTS credit_limit_adjustment (
@@ -98,3 +98,41 @@ CREATE TABLE IF NOT EXISTS credit_limit_adjustment (
 );
 
 CREATE INDEX IF NOT EXISTS idx_adj_account ON credit_limit_adjustment(account_id, created_at DESC);
+
+-- 5. 贵宾室权益表
+CREATE TABLE IF NOT EXISTS lounge_benefit (
+    benefit_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id       UUID NOT NULL REFERENCES account(account_id),
+    lounge_network   VARCHAR(50) NOT NULL,
+    card_last4       VARCHAR(4) NOT NULL,
+    total_uses       INTEGER NOT NULL DEFAULT 0,
+    used_count       INTEGER NOT NULL DEFAULT 0,
+    expiry_date      DATE NOT NULL,
+    status           VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'
+                     CHECK (status IN ('ACTIVE', 'EXPIRED', 'SUSPENDED', 'CANCELLED')),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (account_id, lounge_network)
+);
+
+CREATE INDEX IF NOT EXISTS idx_benefit_account ON lounge_benefit(account_id);
+
+-- 6. 贵宾室入场记录表
+CREATE TABLE IF NOT EXISTS lounge_access_record (
+    access_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    benefit_id       UUID NOT NULL REFERENCES lounge_benefit(benefit_id),
+    lounge_id        VARCHAR(50) NOT NULL,
+    lounge_name      VARCHAR(200),
+    airport_code     VARCHAR(3) NOT NULL,
+    access_time      TIMESTAMP NOT NULL DEFAULT NOW(),
+    guest_count      INTEGER NOT NULL DEFAULT 1,
+    qr_code          VARCHAR(500) NOT NULL,
+    qr_valid_from TIMESTAMP NOT NULL,
+    qr_valid_until   TIMESTAMP NOT NULL,
+    status           VARCHAR(20) NOT NULL DEFAULT 'USED'
+                     CHECK (status IN ('USED', 'EXPIRED', 'CANCELLED')),
+    created_at       TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_access_benefit ON lounge_access_record(benefit_id);
+CREATE INDEX IF NOT EXISTS idx_access_time ON lounge_access_record(access_time DESC);
