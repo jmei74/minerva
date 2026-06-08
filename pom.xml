@@ -93,9 +93,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
         </dependency>
 
         <dependency>
@@ -112,12 +111,12 @@
 
     <build>
         <plugins>
-            <plugin>
+                        <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
                 <configuration>
-                    <!-- Compile targeting Java 17 API, running on Java 26 -->
-                    <release>17</release>
+                   <release>17</release>
                 </configuration>
             </plugin>
             <plugin>

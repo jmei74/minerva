@@ -8,6 +8,7 @@ import com.minerva.creditcard.lounge.repository.LoungeAccessRecordRepository;
 import com.minerva.creditcard.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +32,7 @@ public class LoungeBenefitService {
     public LoungeBenefitService(
             LoungeBenefitRepository benefitRepository,
             LoungeAccessRecordRepository accessRecordRepository,
-            QrCodeService qrCodeService) {
+            @Lazy QrCodeService qrCodeService) {
         this.benefitRepository = benefitRepository;
         this.accessRecordRepository = accessRecordRepository;
         this.qrCodeService = qrCodeService;
@@ -45,7 +46,7 @@ public class LoungeBenefitService {
         log.info("Fetching benefit dashboard for account: {}", accountId);
 
         List<LoungeBenefit> activeBenefits = benefitRepository.findActiveByAccountId(accountId);
-        List<LoungeBenefit> expiringSoon = benefitRepository.findExpiringSoon(accountId);
+        List<LoungeBenefit> expiringSoon = benefitRepository.findExpiringSoon(accountId, java.time.LocalDate.now().plusDays(7));
 
         List<BenefitOverviewDTO> benefitDtos = activeBenefits.stream()
                 .map(BenefitOverviewDTO::fromEntity)

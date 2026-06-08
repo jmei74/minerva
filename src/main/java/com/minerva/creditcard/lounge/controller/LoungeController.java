@@ -15,9 +15,9 @@ import java.util.UUID;
  * 对应架构文档: §2.4 API 网关映射
  * 
  * 限流策略:
- * - /v1/lounge/benefits/*: 200 req/min
+ * - /v1/lounge/benefits/&#42;: 200 req/min
  * - /v1/lounge/search: 500 req/min
- * - /v1/lounge/*/access-code: 100 req/min
+ * - /v1/lounge/&#42;/access-code: 100 req/min
  * - /v1/lounge/access/validate: 无限制（扫码端）
  */
 @RestController

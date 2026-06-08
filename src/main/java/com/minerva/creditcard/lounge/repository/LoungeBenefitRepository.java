@@ -31,6 +31,6 @@ public interface LoungeBenefitRepository extends JpaRepository<LoungeBenefit, UU
      * 查询即将过期的权益（7天内）
      */
     @Query("SELECT lb FROM LoungeBenefit lb WHERE lb.accountId = :accountId " +
-           "AND lb.status = 'ACTIVE' AND lb.expiryDate <= CURRENT_DATE + 7")
-    List<LoungeBenefit> findExpiringSoon(@Param("accountId") UUID accountId);
+                     "AND lb.status = 'ACTIVE' AND lb.expiryDate <= :thresholdDate")
+        List<LoungeBenefit> findExpiringSoon(@Param("accountId") UUID accountId, @Param("thresholdDate") java.time.LocalDate thresholdDate);
 }

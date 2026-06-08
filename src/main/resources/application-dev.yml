@@ -2,24 +2,27 @@ spring:
   application:
     name: credit-card-core
 
-  # H2 内存数据库（dev 本地开发）
+  # PostgreSQL（本地开发）
   datasource:
-    url: jdbc:h2:mem:creditcard_dev;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    url: jdbc:postgresql://localhost:5432/creditcard_dev
+    username: dev
+    password: dev123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: true
 
-  #禁用 Flyway（ddl-auto=create 已够用）
+  # Flyway migrations（V1 已手动执行，可改为自动）
   flyway:
     enabled: false
 
@@ -49,6 +52,8 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  ssl:
+    enabled: false
 
 logging:
   level:

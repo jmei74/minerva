@@ -64,7 +64,7 @@ class LoungeBenefitServiceTest {
         // given
         when(benefitRepository.findActiveByAccountId(accountId))
                 .thenReturn(List.of(testBenefit));
-        when(benefitRepository.findExpiringSoon(accountId))
+        when(benefitRepository.findExpiringSoon(eq(accountId), any(java.time.LocalDate.class)))
                 .thenReturn(List.of());
 
         // when
