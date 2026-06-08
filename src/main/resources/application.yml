@@ -58,7 +58,7 @@ server:
   port: 8080
   ssl:
     key-store: classpath:keystore.p12
-    key-store-password: changeit
+    key-store-password: ${SSL_KEYSTORE_PASSWORD}
     key-store-type: PKCS12
     key-alias: minerva
   http2:
@@ -97,7 +97,7 @@ aws:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:minerva-credit-card-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}
+  secret: ${JWT_SECRET:}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
 # HTTPS（SkyEye 通过 HTTPS 访问）

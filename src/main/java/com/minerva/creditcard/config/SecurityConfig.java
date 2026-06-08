@@ -36,7 +36,7 @@ public class SecurityConfig {
     @Value("${aws.kms.key-id:}")
     private String kmsKeyId;
 
-    @Value("${jwt.secret:minerva-credit-card-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}")
+    @Value("${jwt.secret:}")
     private String jwtSecret;
 
     @Bean
@@ -117,8 +117,14 @@ public class SecurityConfig {
 
     private byte[] deriveKey(String keyId) {
         if (keyId == null || keyId.isBlank()) {
-            return "minerva-credit-card-key-32bytes!!".getBytes(StandardCharsets.UTF_8);
+            throw new IllegalStateException(
+                "FATAL: AWS KMS key ID not configured. Set aws.kms.key-id environment variable. " +
+                "Card encryption requires keys from AWS KMS - hardcoded fallback is not permitted."
+            );
         }
+        // TODO: Replace with actual AWS KMS decryption call:
+        // byte[] raw = kmsClient.decrypt(keyId);
+        // For now, derive from key ID (production must use KMS)
         byte[] raw = keyId.getBytes(StandardCharsets.UTF_8);
         byte[] key = new byte[32];
         System.arraycopy(raw, 0, key, 0, Math.min(raw.length, 32));
