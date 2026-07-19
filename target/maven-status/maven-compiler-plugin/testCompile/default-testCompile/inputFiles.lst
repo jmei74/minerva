@@ -1,0 +1,16 @@
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/config/SslConfigTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/dto/AuthorizationRequestTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/engine/CreditEngineTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/lounge/LoungeBenefitServiceTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/lounge/QrCodeServiceTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/service/AccountServiceTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/service/CardStatusManagerTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/service/CashbackServiceTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/service/CoolingOffCacheServiceTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/service/DelayConfirmationServiceTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/service/InstallmentDecisionServiceTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/service/MetricsServiceTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/service/PayNowOrderManagerTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/service/WalletServiceTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/simplygo/service/MCCCategoryResolverTest.java
+/Users/jmei/projects/minerva/src/test/java/com/minerva/creditcard/util/CardEncryptionUtilTest.java

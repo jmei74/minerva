@@ -59,6 +59,27 @@ const mockInstallments: Installment[] = [
     schedules: [],
     created_at: '2025-04-05T00:00:00Z',
   },
+  {
+    installment_id: 'inst-003',
+    account_id: 'demo-account-001',
+    origin_txn_id: 'txn-015',
+    plan_type: 'CONSUMPTION',
+    tenure: 12,
+    principal_amount: 2400,
+    interest_rate: 0.006,
+    total_interest: 172.80,
+    monthly_payment: 214.40,
+    remaining_principal: 0,
+    installments_paid: 0,
+    installments_remaining: 0,
+    first_due_date: '2025-04-05',
+    status: 'CANCELLED',
+    cancel_reason: 'FULL_REFUND',
+    cancel_time: '2025-04-10T10:00:00Z',
+    start_date: '2025-03-05',
+    schedules: [],
+    created_at: '2025-03-05T00:00:00Z',
+  },
 ];
 
 interface CreditLimitProps {
@@ -131,7 +152,15 @@ const CreditLimit: React.FC<CreditLimitProps> = ({ accountId }) => {
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: string, cancelReason?: string) => {
+    if (status === 'CANCELLED' && cancelReason) {
+      const cancelLabels: Record<string, string> = {
+        USER_REQUEST: '已取消（用户申请）',
+        FULL_REFUND: '已取消（退货）',
+        SYSTEM_CANCEL: '已取消（系统）',
+      };
+      return cancelLabels[cancelReason] || '已取消';
+    }
     const labels: Record<string, string> = {
       ACTIVE: '进行中',
       COMPLETED: '已完成',
@@ -142,7 +171,11 @@ const CreditLimit: React.FC<CreditLimitProps> = ({ accountId }) => {
     return labels[status] || status;
   };
 
-  const getStatusBadgeClass = (status: string) => {
+  const getStatusBadgeClass = (status: string, cancelReason?: string) => {
+    if (status === 'CANCELLED') {
+      // 用户主动取消显示为 info 蓝色，系统取消显示为 warning 黄色
+      return cancelReason === 'USER_REQUEST' ? 'badge-info' : 'badge-warning';
+    }
     const classes: Record<string, string> = {
       ACTIVE: 'badge-success',
       COMPLETED: 'badge-neutral',
@@ -282,8 +315,8 @@ const CreditLimit: React.FC<CreditLimitProps> = ({ accountId }) => {
                   <div className="installment-header">
                     <div className="installment-info">
                       <span className="installment-id font-mono">{inst.installment_id}</span>
-                      <span className={`badge ${getStatusBadgeClass(inst.status)}`}>
-                        {getStatusLabel(inst.status)}
+                      <span className={`badge ${getStatusBadgeClass(inst.status, inst.cancel_reason)}`}>
+                        {getStatusLabel(inst.status, inst.cancel_reason)}
                       </span>
                     </div>
                     <div className="installment-type">

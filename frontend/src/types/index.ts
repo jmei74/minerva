@@ -177,6 +177,9 @@ export interface Installment {
   installments_remaining: number;
   first_due_date: string;
   status: InstallmentStatus;
+  /** 取消原因: USER_REQUEST=用户主动取消, FULL_REFUND=全额退货取消, SYSTEM_CANCEL=系统取消 */
+  cancel_reason?: 'USER_REQUEST' | 'FULL_REFUND' | 'SYSTEM_CANCEL';
+  cancel_time?: string;
   start_date: string;
   schedules: InstallmentSchedule[];
   created_at: string;

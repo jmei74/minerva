@@ -1,0 +1,16 @@
+com/minerva/creditcard/simplygo/service/MCCCategoryResolverTest.class
+com/minerva/creditcard/service/PayNowOrderManagerTest.class
+com/minerva/creditcard/service/CashbackServiceTest.class
+com/minerva/creditcard/dto/AuthorizationRequestTest.class
+com/minerva/creditcard/service/CardStatusManagerTest.class
+com/minerva/creditcard/service/CoolingOffCacheServiceTest.class
+com/minerva/creditcard/service/WalletServiceTest.class
+com/minerva/creditcard/lounge/LoungeBenefitServiceTest.class
+com/minerva/creditcard/service/AccountServiceTest.class
+com/minerva/creditcard/engine/CreditEngineTest.class
+com/minerva/creditcard/config/SslConfigTest.class
+com/minerva/creditcard/lounge/QrCodeServiceTest.class
+com/minerva/creditcard/service/DelayConfirmationServiceTest.class
+com/minerva/creditcard/service/MetricsServiceTest.class
+com/minerva/creditcard/util/CardEncryptionUtilTest.class
+com/minerva/creditcard/service/InstallmentDecisionServiceTest.class
