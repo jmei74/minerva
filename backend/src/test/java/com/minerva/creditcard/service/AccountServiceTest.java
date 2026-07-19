@@ -42,7 +42,6 @@ class AccountServiceTest {
                 .build();
         
         Account savedAccount = Account.builder()
-                .id(1L)
                 .accountNo("ACC123456")
                 .customerId(1001L)
                 .accountType(Account.AccountType.CREDIT_CARD)
@@ -52,6 +51,7 @@ class AccountServiceTest {
                 .currentBalance(BigDecimal.ZERO)
                 .billingCycleDay(15)
                 .build();
+        savedAccount.setId(1L);
         
         when(accountRepository.save(any(Account.class))).thenReturn(savedAccount);
         when(creditLimitRepository.save(any(CreditLimit.class))).thenReturn(new CreditLimit());
@@ -88,7 +88,6 @@ class AccountServiceTest {
         // Given
         String accountNo = "ACC123456";
         Account account = Account.builder()
-                .id(1L)
                 .accountNo(accountNo)
                 .customerId(1001L)
                 .accountType(Account.AccountType.CREDIT_CARD)
@@ -98,6 +97,7 @@ class AccountServiceTest {
                 .currentBalance(BigDecimal.ZERO)
                 .billingCycleDay(1)
                 .build();
+        account.setId(1L);
         
         when(accountRepository.findByAccountNo(accountNo)).thenReturn(Optional.of(account));
         when(accountRepository.save(any(Account.class))).thenReturn(account);

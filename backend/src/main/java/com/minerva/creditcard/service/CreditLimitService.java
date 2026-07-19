@@ -1,23 +1,29 @@
 package com.minerva.creditcard.service;
 
 import com.minerva.creditcard.domain.*;
-import com.minerva.creditcard.dto.*;
 import com.minerva.creditcard.exception.*;
 import com.minerva.creditcard.repository.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class CreditLimitService {
+    
+    private static final Logger log = LoggerFactory.getLogger(CreditLimitService.class);
     
     private final CreditLimitRepository creditLimitRepository;
     private final AccountRepository accountRepository;
+    
+    public CreditLimitService(CreditLimitRepository creditLimitRepository,
+                              AccountRepository accountRepository) {
+        this.creditLimitRepository = creditLimitRepository;
+        this.accountRepository = accountRepository;
+    }
     
     @Transactional(readOnly = true)
     public BigDecimal getAvailableCredit(Long accountId) {
@@ -59,7 +65,7 @@ public class CreditLimitService {
     }
     
     @Transactional
-    public CreditLimit setTemporaryLimit(Long accountId, BigDecimal amount, java.time.LocalDate expiryDate) {
+    public CreditLimit setTemporaryLimit(Long accountId, BigDecimal amount, LocalDate expiryDate) {
         log.info("Setting temporary limit for account: {}, amount: {}, expiry: {}", 
                 accountId, amount, expiryDate);
         

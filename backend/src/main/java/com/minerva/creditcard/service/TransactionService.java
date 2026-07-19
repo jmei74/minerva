@@ -4,8 +4,8 @@ import com.minerva.creditcard.domain.*;
 import com.minerva.creditcard.dto.*;
 import com.minerva.creditcard.exception.*;
 import com.minerva.creditcard.repository.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,15 +16,27 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class TransactionService {
+    
+    private static final Logger log = LoggerFactory.getLogger(TransactionService.class);
     
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final CardRepository cardRepository;
     private final CreditLimitRepository creditLimitRepository;
     private final InstallmentScheduleRepository installmentScheduleRepository;
+    
+    public TransactionService(TransactionRepository transactionRepository,
+                             AccountRepository accountRepository,
+                             CardRepository cardRepository,
+                             CreditLimitRepository creditLimitRepository,
+                             InstallmentScheduleRepository installmentScheduleRepository) {
+        this.transactionRepository = transactionRepository;
+        this.accountRepository = accountRepository;
+        this.cardRepository = cardRepository;
+        this.creditLimitRepository = creditLimitRepository;
+        this.installmentScheduleRepository = installmentScheduleRepository;
+    }
     
     @Transactional
     public AuthorizationResponse authorize(AuthorizationRequest request) {

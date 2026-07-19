@@ -4,8 +4,8 @@ import com.minerva.creditcard.domain.*;
 import com.minerva.creditcard.dto.*;
 import com.minerva.creditcard.exception.*;
 import com.minerva.creditcard.repository.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +17,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class BillService {
+    
+    private static final Logger log = LoggerFactory.getLogger(BillService.class);
     
     private final BillRepository billRepository;
     private final AccountRepository accountRepository;
@@ -27,6 +27,14 @@ public class BillService {
     
     private static final BigDecimal MIN_PAYMENT_PERCENTAGE = new BigDecimal("0.05");
     private static final BigDecimal DEFAULT_APR = new BigDecimal("0.18");
+    
+    public BillService(BillRepository billRepository,
+                       AccountRepository accountRepository,
+                       TransactionRepository transactionRepository) {
+        this.billRepository = billRepository;
+        this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
+    }
     
     @Transactional
     public Bill generateBill(String accountNo, LocalDate billingPeriodEnd) {

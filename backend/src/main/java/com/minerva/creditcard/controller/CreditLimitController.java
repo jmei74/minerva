@@ -1,7 +1,7 @@
 package com.minerva.creditcard.controller;
 
+import com.minerva.creditcard.domain.CreditLimit;
 import com.minerva.creditcard.service.CreditLimitService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,10 +10,13 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1/credit-limits")
-@RequiredArgsConstructor
 public class CreditLimitController {
     
     private final CreditLimitService creditLimitService;
+    
+    public CreditLimitController(CreditLimitService creditLimitService) {
+        this.creditLimitService = creditLimitService;
+    }
     
     @GetMapping("/account/{accountId}/available")
     public ResponseEntity<BigDecimal> getAvailableCredit(@PathVariable Long accountId) {
@@ -22,26 +25,25 @@ public class CreditLimitController {
     }
     
     @GetMapping("/account/{accountId}")
-    public ResponseEntity<com.minerva.creditcard.domain.CreditLimit> getCreditLimit(@PathVariable Long accountId) {
-        com.minerva.creditcard.domain.CreditLimit creditLimit = creditLimitService.getCreditLimit(accountId);
+    public ResponseEntity<CreditLimit> getCreditLimit(@PathVariable Long accountId) {
+        CreditLimit creditLimit = creditLimitService.getCreditLimit(accountId);
         return ResponseEntity.ok(creditLimit);
     }
     
     @PatchMapping("/account/{accountId}/adjust")
-    public ResponseEntity<com.minerva.creditcard.domain.CreditLimit> adjustCreditLimit(
+    public ResponseEntity<CreditLimit> adjustCreditLimit(
             @PathVariable Long accountId,
             @RequestParam BigDecimal newLimit) {
-        com.minerva.creditcard.domain.CreditLimit creditLimit = creditLimitService.adjustCreditLimit(accountId, newLimit);
+        CreditLimit creditLimit = creditLimitService.adjustCreditLimit(accountId, newLimit);
         return ResponseEntity.ok(creditLimit);
     }
     
     @PatchMapping("/account/{accountId}/temporary")
-    public ResponseEntity<com.minerva.creditcard.domain.CreditLimit> setTemporaryLimit(
+    public ResponseEntity<CreditLimit> setTemporaryLimit(
             @PathVariable Long accountId,
             @RequestParam BigDecimal amount,
             @RequestParam LocalDate expiryDate) {
-        com.minerva.creditcard.domain.CreditLimit creditLimit = 
-                creditLimitService.setTemporaryLimit(accountId, amount, expiryDate);
+        CreditLimit creditLimit = creditLimitService.setTemporaryLimit(accountId, amount, expiryDate);
         return ResponseEntity.ok(creditLimit);
     }
 }

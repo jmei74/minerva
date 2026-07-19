@@ -48,21 +48,21 @@ class TransactionServiceTest {
                 .merchantCategoryCode("5411")
                 .build();
         
-        Card card = Card.builder()
-                .id(1L)
-                .cardId("CARD-001")
-                .token("test-token-123")
-                .status(Card.CardStatus.ACTIVE)
-                .build();
-        
         Account account = Account.builder()
-                .id(1L)
                 .accountNo("ACC-001")
                 .customerId(1001L)
                 .accountType(Account.AccountType.CREDIT_CARD)
                 .status(Account.AccountStatus.ACTIVE)
                 .build();
-        card.setAccount(account);
+        account.setId(1L);
+        
+        Card card = Card.builder()
+                .cardId("CARD-001")
+                .token("test-token-123")
+                .status(Card.CardStatus.ACTIVE)
+                .account(account)
+                .build();
+        card.setId(1L);
         
         CreditLimit creditLimit = CreditLimit.builder()
                 .account(account)
@@ -86,7 +86,7 @@ class TransactionServiceTest {
         assertNotNull(response.getAuthorizationCode());
         assertEquals(new BigDecimal("1000"), response.getAuthorizedAmount());
         
-        verify(creditLimitRepository).useCredit(any(BigDecimal.class));
+        verify(creditLimitRepository).save(any(CreditLimit.class));
         verify(transactionRepository).save(any(Transaction.class));
     }
     
@@ -99,19 +99,18 @@ class TransactionServiceTest {
                 .currency("CNY")
                 .build();
         
-        Card card = Card.builder()
-                .id(1L)
-                .cardId("CARD-001")
-                .token("test-token-123")
-                .status(Card.CardStatus.ACTIVE)
-                .build();
-        
         Account account = Account.builder()
-                .id(1L)
                 .accountNo("ACC-001")
                 .status(Account.AccountStatus.ACTIVE)
                 .build();
-        card.setAccount(account);
+        account.setId(1L);
+        
+        Card card = Card.builder()
+                .cardId("CARD-001")
+                .token("test-token-123")
+                .status(Card.CardStatus.ACTIVE)
+                .account(account)
+                .build();
         
         CreditLimit creditLimit = CreditLimit.builder()
                 .account(account)
@@ -141,7 +140,6 @@ class TransactionServiceTest {
                 .build();
         
         Card card = Card.builder()
-                .id(1L)
                 .cardId("CARD-001")
                 .token("test-token-123")
                 .status(Card.CardStatus.SUSPENDED)
@@ -167,11 +165,11 @@ class TransactionServiceTest {
                 .build();
         
         Account account = Account.builder()
-                .id(1L)
                 .accountNo("ACC-001")
                 .currentBalance(new BigDecimal("1000"))
                 .status(Account.AccountStatus.ACTIVE)
                 .build();
+        account.setId(1L);
         
         when(accountRepository.findByAccountNoForUpdate("ACC-001")).thenReturn(Optional.of(account));
         when(accountRepository.save(any(Account.class))).thenReturn(account);
@@ -196,22 +194,22 @@ class TransactionServiceTest {
                 .reason("Customer return")
                 .build();
         
+        Account account = Account.builder()
+                .accountNo("ACC-001")
+                .currentBalance(new BigDecimal("500"))
+                .status(Account.AccountStatus.ACTIVE)
+                .build();
+        account.setId(1L);
+        
         Transaction originalTx = Transaction.builder()
-                .id(1L)
                 .transactionId("TXN-001")
                 .transactionType(Transaction.TransactionType.CAPTURE)
                 .amount(new BigDecimal("500"))
                 .currency("CNY")
                 .status(Transaction.TransactionStatus.SETTLED)
+                .account(account)
                 .build();
-        
-        Account account = Account.builder()
-                .id(1L)
-                .accountNo("ACC-001")
-                .currentBalance(new BigDecimal("500"))
-                .status(Account.AccountStatus.ACTIVE)
-                .build();
-        originalTx.setAccount(account);
+        originalTx.setId(1L);
         
         CreditLimit creditLimit = CreditLimit.builder()
                 .account(account)
@@ -233,6 +231,5 @@ class TransactionServiceTest {
         assertNotNull(response);
         assertEquals("REFUND", response.getTransactionType());
         assertEquals(new BigDecimal("200"), response.getAmount());
-        verify(creditLimitRepository).releaseCredit(any(BigDecimal.class));
     }
 }

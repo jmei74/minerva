@@ -4,26 +4,36 @@ import com.minerva.creditcard.domain.*;
 import com.minerva.creditcard.dto.*;
 import com.minerva.creditcard.exception.*;
 import com.minerva.creditcard.repository.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class InstallmentService {
+    
+    private static final Logger log = LoggerFactory.getLogger(InstallmentService.class);
     
     private final InstallmentScheduleRepository installmentScheduleRepository;
     private final TransactionRepository transactionRepository;
     private final CreditLimitRepository creditLimitRepository;
     private final AccountRepository accountRepository;
+    
+    public InstallmentService(InstallmentScheduleRepository installmentScheduleRepository,
+                             TransactionRepository transactionRepository,
+                             CreditLimitRepository creditLimitRepository,
+                             AccountRepository accountRepository) {
+        this.installmentScheduleRepository = installmentScheduleRepository;
+        this.transactionRepository = transactionRepository;
+        this.creditLimitRepository = creditLimitRepository;
+        this.accountRepository = accountRepository;
+    }
     
     @Transactional
     public InstallmentResponse createInstallment(InstallmentRequest request) {
@@ -102,7 +112,7 @@ public class InstallmentService {
     }
     
     @Transactional(readOnly = true)
-    public java.util.List<InstallmentResponse> getInstallmentsByAccount(Long accountId) {
+    public List<InstallmentResponse> getInstallmentsByAccount(Long accountId) {
         return installmentScheduleRepository.findByAccountId(accountId)
                 .stream()
                 .map(this::toInstallmentResponse)
@@ -113,8 +123,7 @@ public class InstallmentService {
     public InstallmentResponse processPartialRefund(String scheduleId, BigDecimal refundAmount) {
         log.info("Processing partial refund for installment: {}, amount: {}", scheduleId, refundAmount);
         
-        InstallmentSchedule schedule = installmentScheduleRepository.findById(
-                installmentScheduleRepository.findByScheduleId(scheduleId).map(InstallmentSchedule::getId).orElseThrow())
+        InstallmentSchedule schedule = installmentScheduleRepository.findByScheduleId(scheduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("InstallmentSchedule", scheduleId));
         
         if (schedule.getStatus() != InstallmentSchedule.InstallmentStatus.ACTIVE) {

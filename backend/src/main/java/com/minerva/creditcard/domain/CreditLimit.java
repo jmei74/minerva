@@ -1,17 +1,12 @@
 package com.minerva.creditcard.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "credit_limits")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class CreditLimit {
     
     @Id
@@ -52,13 +47,44 @@ public class CreditLimit {
         updatedAt = LocalDateTime.now();
     }
     
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    
+    public Account getAccount() { return account; }
+    public void setAccount(Account account) { this.account = account; }
+    
+    public BigDecimal getTotalCreditLimit() { return totalCreditLimit; }
+    public void setTotalCreditLimit(BigDecimal totalCreditLimit) { this.totalCreditLimit = totalCreditLimit; }
+    
+    public BigDecimal getAvailableCreditLimit() { return availableCreditLimit; }
+    public void setAvailableCreditLimit(BigDecimal availableCreditLimit) { this.availableCreditLimit = availableCreditLimit; }
+    
+    public BigDecimal getUsedCreditLimit() { return usedCreditLimit; }
+    public void setUsedCreditLimit(BigDecimal usedCreditLimit) { this.usedCreditLimit = usedCreditLimit; }
+    
+    public BigDecimal getTemporaryLimit() { return temporaryLimit; }
+    public void setTemporaryLimit(BigDecimal temporaryLimit) { this.temporaryLimit = temporaryLimit; }
+    
+    public LocalDate getTemporaryLimitExpiry() { return temporaryLimitExpiry; }
+    public void setTemporaryLimitExpiry(LocalDate temporaryLimitExpiry) { this.temporaryLimitExpiry = temporaryLimitExpiry; }
+    
+    public BigDecimal getCashAdvanceLimit() { return cashAdvanceLimit; }
+    public void setCashAdvanceLimit(BigDecimal cashAdvanceLimit) { this.cashAdvanceLimit = cashAdvanceLimit; }
+    
+    public BigDecimal getCashAdvanceUsed() { return cashAdvanceUsed; }
+    public void setCashAdvanceUsed(BigDecimal cashAdvanceUsed) { this.cashAdvanceUsed = cashAdvanceUsed; }
+    
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
     public boolean hasAvailableCredit(BigDecimal amount) {
-        BigDecimal effectiveLimit = totalCreditLimit;
+        BigDecimal effectiveAvailable = availableCreditLimit;
         if (temporaryLimit != null && temporaryLimitExpiry != null 
                 && !temporaryLimitExpiry.isBefore(LocalDate.now())) {
-            effectiveLimit = effectiveLimit.add(temporaryLimit);
+            effectiveAvailable = effectiveAvailable.add(temporaryLimit);
         }
-        return availableCreditLimit.compareTo(amount) >= 0;
+        return effectiveAvailable.compareTo(amount) >= 0;
     }
     
     public void useCredit(BigDecimal amount) {
@@ -71,6 +97,27 @@ public class CreditLimit {
     
     public void releaseCredit(BigDecimal amount) {
         availableCreditLimit = availableCreditLimit.add(amount);
-        usedCreditLimit = usedCreditLimit.subtract(amount);
+        if (usedCreditLimit.compareTo(amount) >= 0) {
+            usedCreditLimit = usedCreditLimit.subtract(amount);
+        } else {
+            usedCreditLimit = BigDecimal.ZERO;
+        }
+    }
+    
+    // Builder pattern
+    public static Builder builder() { return new Builder(); }
+    
+    public static class Builder {
+        private final CreditLimit cl = new CreditLimit();
+        
+        public Builder account(Account account) { cl.account = account; return this; }
+        public Builder totalCreditLimit(BigDecimal totalCreditLimit) { cl.totalCreditLimit = totalCreditLimit; return this; }
+        public Builder availableCreditLimit(BigDecimal availableCreditLimit) { cl.availableCreditLimit = availableCreditLimit; return this; }
+        public Builder usedCreditLimit(BigDecimal usedCreditLimit) { cl.usedCreditLimit = usedCreditLimit; return this; }
+        public Builder temporaryLimit(BigDecimal temporaryLimit) { cl.temporaryLimit = temporaryLimit; return this; }
+        public Builder temporaryLimitExpiry(LocalDate temporaryLimitExpiry) { cl.temporaryLimitExpiry = temporaryLimitExpiry; return this; }
+        public Builder cashAdvanceLimit(BigDecimal cashAdvanceLimit) { cl.cashAdvanceLimit = cashAdvanceLimit; return this; }
+        public Builder cashAdvanceUsed(BigDecimal cashAdvanceUsed) { cl.cashAdvanceUsed = cashAdvanceUsed; return this; }
+        public CreditLimit build() { return cl; }
     }
 }

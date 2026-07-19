@@ -4,22 +4,31 @@ import com.minerva.creditcard.domain.*;
 import com.minerva.creditcard.dto.*;
 import com.minerva.creditcard.exception.*;
 import com.minerva.creditcard.repository.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class AccountService {
+    
+    private static final Logger log = LoggerFactory.getLogger(AccountService.class);
     
     private final AccountRepository accountRepository;
     private final CardRepository cardRepository;
     private final CreditLimitRepository creditLimitRepository;
+    
+    public AccountService(AccountRepository accountRepository, 
+                         CardRepository cardRepository,
+                         CreditLimitRepository creditLimitRepository) {
+        this.accountRepository = accountRepository;
+        this.cardRepository = cardRepository;
+        this.creditLimitRepository = creditLimitRepository;
+    }
     
     @Transactional
     public AccountResponse createAccount(CreateAccountRequest request) {
@@ -90,7 +99,7 @@ public class AccountService {
     }
     
     @Transactional(readOnly = true)
-    public java.util.List<AccountResponse> getAccountsByCustomer(Long customerId) {
+    public List<AccountResponse> getAccountsByCustomer(Long customerId) {
         return accountRepository.findByCustomerId(customerId)
                 .stream()
                 .map(this::toAccountResponse)

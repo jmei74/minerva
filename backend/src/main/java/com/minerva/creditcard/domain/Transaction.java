@@ -147,6 +147,7 @@ public class Transaction {
         public Builder description(String description) { txn.description = description; return this; }
         public Builder installmentCount(Integer installmentCount) { txn.installmentCount = installmentCount; return this; }
         public Builder installmentSchedule(InstallmentSchedule installmentSchedule) { txn.installmentSchedule = installmentSchedule; return this; }
+        public Builder createdAt(LocalDateTime createdAt) { txn.createdAt = createdAt; return this; }
         public Transaction build() { return txn; }
     }
     

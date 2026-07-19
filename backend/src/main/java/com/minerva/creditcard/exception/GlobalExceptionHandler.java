@@ -1,6 +1,5 @@
 package com.minerva.creditcard.exception;
 
-import lombok.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -78,10 +77,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
     
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
     public static class ErrorResponse {
         private LocalDateTime timestamp;
         private int status;
@@ -89,5 +84,39 @@ public class GlobalExceptionHandler {
         private String message;
         private String errorCode;
         private List<String> details;
+        
+        public ErrorResponse() {}
+        
+        public LocalDateTime getTimestamp() { return timestamp; }
+        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+        
+        public int getStatus() { return status; }
+        public void setStatus(int status) { this.status = status; }
+        
+        public String getError() { return error; }
+        public void setError(String error) { this.error = error; }
+        
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        
+        public String getErrorCode() { return errorCode; }
+        public void setErrorCode(String errorCode) { this.errorCode = errorCode; }
+        
+        public List<String> getDetails() { return details; }
+        public void setDetails(List<String> details) { this.details = details; }
+        
+        public static Builder builder() { return new Builder(); }
+        
+        public static class Builder {
+            private final ErrorResponse resp = new ErrorResponse();
+            
+            public Builder timestamp(LocalDateTime timestamp) { resp.timestamp = timestamp; return this; }
+            public Builder status(int status) { resp.status = status; return this; }
+            public Builder error(String error) { resp.error = error; return this; }
+            public Builder message(String message) { resp.message = message; return this; }
+            public Builder errorCode(String errorCode) { resp.errorCode = errorCode; return this; }
+            public Builder details(List<String> details) { resp.details = details; return this; }
+            public ErrorResponse build() { return resp; }
+        }
     }
 }

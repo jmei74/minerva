@@ -1,17 +1,12 @@
 package com.minerva.creditcard.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "installment_schedules")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class InstallmentSchedule {
     
     @Id
@@ -87,6 +82,81 @@ public class InstallmentSchedule {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+    
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    
+    public String getScheduleId() { return scheduleId; }
+    public void setScheduleId(String scheduleId) { this.scheduleId = scheduleId; }
+    
+    public Account getAccount() { return account; }
+    public void setAccount(Account account) { this.account = account; }
+    
+    public Transaction getOriginalTransaction() { return originalTransaction; }
+    public void setOriginalTransaction(Transaction originalTransaction) { this.originalTransaction = originalTransaction; }
+    
+    public BigDecimal getPrincipalAmount() { return principalAmount; }
+    public void setPrincipalAmount(BigDecimal principalAmount) { this.principalAmount = principalAmount; }
+    
+    public BigDecimal getTotalInterest() { return totalInterest; }
+    public void setTotalInterest(BigDecimal totalInterest) { this.totalInterest = totalInterest; }
+    
+    public BigDecimal getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
+    
+    public BigDecimal getMonthlyPayment() { return monthlyPayment; }
+    public void setMonthlyPayment(BigDecimal monthlyPayment) { this.monthlyPayment = monthlyPayment; }
+    
+    public Integer getInstallmentCount() { return installmentCount; }
+    public void setInstallmentCount(Integer installmentCount) { this.installmentCount = installmentCount; }
+    
+    public Integer getInstallmentsRemaining() { return installmentsRemaining; }
+    public void setInstallmentsRemaining(Integer installmentsRemaining) { this.installmentsRemaining = installmentsRemaining; }
+    
+    public BigDecimal getRemainingPrincipal() { return remainingPrincipal; }
+    public void setRemainingPrincipal(BigDecimal remainingPrincipal) { this.remainingPrincipal = remainingPrincipal; }
+    
+    public BigDecimal getApr() { return apr; }
+    public void setApr(BigDecimal apr) { this.apr = apr; }
+    
+    public InstallmentStatus getStatus() { return status; }
+    public void setStatus(InstallmentStatus status) { this.status = status; }
+    
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    
+    public LocalDate getNextPaymentDate() { return nextPaymentDate; }
+    public void setNextPaymentDate(LocalDate nextPaymentDate) { this.nextPaymentDate = nextPaymentDate; }
+    
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    // Builder pattern
+    public static Builder builder() { return new Builder(); }
+    
+    public static class Builder {
+        private final InstallmentSchedule schedule = new InstallmentSchedule();
+        
+        public Builder scheduleId(String scheduleId) { schedule.scheduleId = scheduleId; return this; }
+        public Builder account(Account account) { schedule.account = account; return this; }
+        public Builder originalTransaction(Transaction originalTransaction) { schedule.originalTransaction = originalTransaction; return this; }
+        public Builder principalAmount(BigDecimal principalAmount) { schedule.principalAmount = principalAmount; return this; }
+        public Builder totalInterest(BigDecimal totalInterest) { schedule.totalInterest = totalInterest; return this; }
+        public Builder totalAmount(BigDecimal totalAmount) { schedule.totalAmount = totalAmount; return this; }
+        public Builder monthlyPayment(BigDecimal monthlyPayment) { schedule.monthlyPayment = monthlyPayment; return this; }
+        public Builder installmentCount(Integer installmentCount) { schedule.installmentCount = installmentCount; return this; }
+        public Builder installmentsRemaining(Integer installmentsRemaining) { schedule.installmentsRemaining = installmentsRemaining; return this; }
+        public Builder remainingPrincipal(BigDecimal remainingPrincipal) { schedule.remainingPrincipal = remainingPrincipal; return this; }
+        public Builder apr(BigDecimal apr) { schedule.apr = apr; return this; }
+        public Builder status(InstallmentStatus status) { schedule.status = status; return this; }
+        public Builder startDate(LocalDate startDate) { schedule.startDate = startDate; return this; }
+        public Builder nextPaymentDate(LocalDate nextPaymentDate) { schedule.nextPaymentDate = nextPaymentDate; return this; }
+        public InstallmentSchedule build() { return schedule; }
     }
     
     public enum InstallmentStatus {

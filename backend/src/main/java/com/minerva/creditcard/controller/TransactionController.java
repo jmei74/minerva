@@ -2,8 +2,6 @@ package com.minerva.creditcard.controller;
 
 import com.minerva.creditcard.dto.*;
 import com.minerva.creditcard.service.TransactionService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -13,13 +11,16 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/transactions")
-@RequiredArgsConstructor
 public class TransactionController {
     
     private final TransactionService transactionService;
     
+    public TransactionController(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
+    
     @PostMapping("/authorize")
-    public ResponseEntity<AuthorizationResponse> authorize(@Valid @RequestBody AuthorizationRequest request) {
+    public ResponseEntity<AuthorizationResponse> authorize(@RequestBody AuthorizationRequest request) {
         AuthorizationResponse response = transactionService.authorize(request);
         return ResponseEntity.ok(response);
     }
@@ -31,13 +32,13 @@ public class TransactionController {
     }
     
     @PostMapping("/refund")
-    public ResponseEntity<TransactionResponse> refund(@Valid @RequestBody RefundRequest request) {
+    public ResponseEntity<TransactionResponse> refund(@RequestBody RefundRequest request) {
         TransactionResponse response = transactionService.refund(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
     @PostMapping("/payment")
-    public ResponseEntity<TransactionResponse> processPayment(@Valid @RequestBody PaymentRequest request) {
+    public ResponseEntity<TransactionResponse> processPayment(@RequestBody PaymentRequest request) {
         TransactionResponse response = transactionService.processPayment(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

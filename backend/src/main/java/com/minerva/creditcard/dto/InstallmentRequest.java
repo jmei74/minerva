@@ -1,25 +1,33 @@
 package com.minerva.creditcard.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.*;
 import java.math.BigDecimal;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class InstallmentRequest {
     
-    @NotBlank(message = "Transaction ID is required")
     private String transactionId;
-    
-    @NotNull(message = "Installment count is required")
-    @Min(value = 2, message = "Installment count must be at least 2")
-    @Max(value = 36, message = "Installment count cannot exceed 36")
     private Integer installmentCount;
-    
-    @NotNull(message = "APR is required")
-    @DecimalMin(value = "0.0", message = "APR must be non-negative")
-    @DecimalMax(value = "1.0", message = "APR must not exceed 100%")
     private BigDecimal apr;
+    
+    public InstallmentRequest() {}
+    
+    public String getTransactionId() { return transactionId; }
+    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+    
+    public Integer getInstallmentCount() { return installmentCount; }
+    public void setInstallmentCount(Integer installmentCount) { this.installmentCount = installmentCount; }
+    
+    public BigDecimal getApr() { return apr; }
+    public void setApr(BigDecimal apr) { this.apr = apr; }
+    
+    // Builder pattern
+    public static Builder builder() { return new Builder(); }
+    
+    public static class Builder {
+        private final InstallmentRequest req = new InstallmentRequest();
+        
+        public Builder transactionId(String transactionId) { req.transactionId = transactionId; return this; }
+        public Builder installmentCount(Integer installmentCount) { req.installmentCount = installmentCount; return this; }
+        public Builder apr(BigDecimal apr) { req.apr = apr; return this; }
+        public InstallmentRequest build() { return req; }
+    }
 }

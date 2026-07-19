@@ -2,8 +2,6 @@ package com.minerva.creditcard.controller;
 
 import com.minerva.creditcard.dto.*;
 import com.minerva.creditcard.service.AccountService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,13 +9,16 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/accounts")
-@RequiredArgsConstructor
 public class AccountController {
     
     private final AccountService accountService;
     
+    public AccountController(AccountService accountService) {
+        this.accountService = accountService;
+    }
+    
     @PostMapping
-    public ResponseEntity<AccountResponse> createAccount(@Valid @RequestBody CreateAccountRequest request) {
+    public ResponseEntity<AccountResponse> createAccount(@RequestBody CreateAccountRequest request) {
         AccountResponse response = accountService.createAccount(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
