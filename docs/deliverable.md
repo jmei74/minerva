@@ -4,7 +4,7 @@
 
 - **文件**: `docs/credit-card-prd.md`
 - **分支**: `feature/credit-card-prd`
-- **最终版本**: v3.0 (commit: `6ee384a`)
+- **最终版本**: v3.0 (commit: `b8ae5f7`)
 - **状态**: ✅ 完成
 
 ## 完成内容
