@@ -1,8 +1,8 @@
 # 信用卡核心系统 PRD 与技术方案
 
-**版本**: v3.0
+**版本**: v4.0
 **作者**: 小晶
-**日期**: 2025-05-31（v2.0 修订：2026-07-19；v3.0 修订：2026-07-19）
+**日期**: 2025-05-31（v2.0 修订：2026-07-19；v3.0 修订：2026-07-19；v4.0 修订：2026-07-19）
 **状态**: 初稿
 
 ---
@@ -217,7 +217,7 @@
 | principal_paid | DECIMAL(15,2) | 当期已还本金 |
 | interest_paid | DECIMAL(15,2) | 当期已还利息 |
 | total_paid | DECIMAL(15,2) | 当期已还总额 |
-| status | ENUM | PENDING/OVERDUE/PAID |
+| status | ENUM | PENDING/OVERDUE/PAID/CANCELLED |
 | paid_date | DATE | 实际还款日期（nullable） |
 | created_at | TIMESTAMP | 创建时间 |
 
@@ -353,12 +353,23 @@ Response: { "refund_txn_id": "uuid", "status": "COMPLETED" }
 | 场景 | 处理逻辑 |
 |------|----------|
 | 全额退货（退货金额 = 原始消费金额） | ① 生成退款交易（REVERSE）并更新 Transaction.status = REFUNDED；② Installment.status → CANCELLED；③ 将 Installment.remaining_principal 从 used_amount 中释放（扣减 account.installment_used）；④ 将所有未到期 InstallmentSchedule 记录标记为 CANCELLED |
-| 部分退货（退货金额 < 原始消费金额） | ① 生成退款交易，金额为部分退货额；② 按比例扣减 Installment.remaining_principal（remaining_principal -= 退货金额）；③ 重新计算剩余期次的每期应还本金（prorate）；④ Installment.installments_remaining 和对应 InstallmentSchedule 数量不变，仅金额调整；⑤ Installment.status 保持 ACTIVE |
+| 部分退货（退货金额 < 原始消费金额） | ① 生成退款交易，金额为部分退货额；② `remaining_principal -= 退货金额`（立即释放对应 installment_used）；③ 重新计算剩余期次的每期应还本金（prorate）；④ Installment.installments_remaining 和对应 InstallmentSchedule 数量不变，仅金额调整；⑤ Installment.status 保持 ACTIVE；⑥ 所有未到期 InstallmentSchedule 记录金额同步更新 |
 | 退货不支持超过原始消费金额 | 超出部分拒绝，返回错误码 REFUND_EXCEEDS_ORIGINAL |
 
 **约束**：
 - 若分期已有部分期次逾期，退货操作需先完成逾期还款，否则拒绝（REFUND_BLOCKED_BY_OVERDUE）
 - 账单日之后发起的分期退货，不影响本期账单最低还款额计算（退货金额在下期账单冲抵）
+
+**部分退货重新摊销公式**：
+
+- `remaining_principal_new = remaining_principal_old - 退货金额`（立即释放 installment_used）
+- `monthly_payment_new = remaining_principal_new / installments_remaining`（按剩余本金均分至剩余期次，利息不变）
+- 每期 Schedule 金额重新计算：`principal_due_new = remaining_principal_new / installments_remaining`，`interest_due` 保持原分期计划利率不变
+
+**示例**：假设原分期剩余本金 6000 元、剩余 3 期、月利率 0.6%，退货 2000 元：
+- `remaining_principal_new = 6000 - 2000 = 4000`（installment_used 立即扣减 2000）
+- `monthly_payment_new = 4000 / 3 ≈ 1333.33`（含本金 + 按 0.6% 计息）
+- 对应 3 期 InstallmentSchedule 金额均更新为 ≈ 1333.33 元
 
 ### 5.3 分期业务
 
@@ -552,7 +563,8 @@ Response: {
 
 ---
 
-*文档版本：v3.0 | 最后更新：2026-07-19*
+*文档版本：v4.0 | 最后更新：2026-07-19*
 *修订说明：*
 - *v2.0：① 授权 API 改用 token 而非明文 PAN，明确令牌化原则；② 新增 Installment/InstallmentSchedule 分期数据模型*
 - *v3.0：① 补充分期退货业务逻辑（全额退货取消分期 + 释放 installment_used；部分退货按比例扣减 remaining_principal）；② 明确 Account.create 响应字段为 TSP 返回的 token（含格式说明），移除 masked_card_no 及相关推导逻辑；③ Installment.status 新增 CANCELLED 状态*
+- *v4.0：① InstallmentSchedule.status 枚举新增 CANCELLED；② 部分退货重新摊销公式（remaining_principal_new = remaining_principal_old - 退货金额；monthly_payment_new = remaining_principal_new / installments_remaining）及示例计算（6000元/3期，退货2000元→新月供≈1333.33元）*
