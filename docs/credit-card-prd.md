@@ -1,8 +1,8 @@
 # 信用卡核心系统 PRD 与技术方案
 
-**版本**: v2.0
+**版本**: v3.0
 **作者**: 小晶
-**日期**: 2025-05-31（v2.0 修订：2026-07-19）
+**日期**: 2025-05-31（v2.0 修订：2026-07-19；v3.0 修订：2026-07-19）
 **状态**: 初稿
 
 ---
@@ -51,6 +51,7 @@
 | 授权完成 | 预授权转实际消费 |
 | 超额控制 | 支持设置超额比例（如 10%），超限交易拒绝 |
 | 分期占用 | 分期本金在还款前持续占用额度 |
+| 分期退货 | 分期交易退货：全额退货取消分期计划并释放额度；部分退货扣减剩余本金，调整还款计划 |
 
 ### 2.4 账单生成（Billing）
 
@@ -198,7 +199,7 @@
 | installments_paid | INT | 已还期数 |
 | installments_remaining | INT | 剩余期数 |
 | first_due_date | DATE | 首次到期还款日 |
-| status | ENUM | ACTIVE/COMPLETED/EARLY_SETTLED/DEFAULTED |
+| status | ENUM | ACTIVE/COMPLETED/EARLY_SETTLED/DEFAULTED/CANCELLED |
 | start_date | DATE | 分期开始日期 |
 | created_at | TIMESTAMP | 创建时间 |
 
@@ -266,8 +267,14 @@ CREATE INDEX idx_installment_schedule_due ON installment_schedule(status, due_da
 ```
 POST /api/v1/accounts
 Request: { "customer_id": "uuid", "credit_limit": 50000, "billing_day": 15 }
-Response: { "account_id": "uuid", "masked_card_no": "**** **** **** 1234", "status": "ACTIVE" }
+Response: {
+  "account_id": "uuid",
+  "token": "tkn_****_****1234",   ← Tokenization Service 返回的 token（格式已脱敏）
+  "status": "ACTIVE"
+}
 ```
+
+> **token 数据来源说明**：`POST /api/v1/accounts` 的响应字段为 `token`，而非 `masked_card_no`。开卡时，Tokenization Service（TSP，如 Visa Token Service / Mastercard DSP）生成 token 并返回，其格式自带脱敏掩码（如 `tkn_****_****1234`），系统将此 token 存入 Account.token_id 字段，后续所有 API 响应中均使用该 token，从不暴露明文 PAN。
 
 #### 查询账户
 ```
@@ -340,6 +347,18 @@ POST /api/v1/transactions/{txn_id}/refund
 Request: { "amount": 500 }
 Response: { "refund_txn_id": "uuid", "status": "COMPLETED" }
 ```
+
+**分期交易退货处理逻辑**（当 `txn_id` 对应的 Transaction.installment_id 非空时触发）：
+
+| 场景 | 处理逻辑 |
+|------|----------|
+| 全额退货（退货金额 = 原始消费金额） | ① 生成退款交易（REVERSE）并更新 Transaction.status = REFUNDED；② Installment.status → CANCELLED；③ 将 Installment.remaining_principal 从 used_amount 中释放（扣减 account.installment_used）；④ 将所有未到期 InstallmentSchedule 记录标记为 CANCELLED |
+| 部分退货（退货金额 < 原始消费金额） | ① 生成退款交易，金额为部分退货额；② 按比例扣减 Installment.remaining_principal（remaining_principal -= 退货金额）；③ 重新计算剩余期次的每期应还本金（prorate）；④ Installment.installments_remaining 和对应 InstallmentSchedule 数量不变，仅金额调整；⑤ Installment.status 保持 ACTIVE |
+| 退货不支持超过原始消费金额 | 超出部分拒绝，返回错误码 REFUND_EXCEEDS_ORIGINAL |
+
+**约束**：
+- 若分期已有部分期次逾期，退货操作需先完成逾期还款，否则拒绝（REFUND_BLOCKED_BY_OVERDUE）
+- 账单日之后发起的分期退货，不影响本期账单最低还款额计算（退货金额在下期账单冲抵）
 
 ### 5.3 分期业务
 
@@ -533,5 +552,7 @@ Response: {
 
 ---
 
-*文档版本：v2.0 | 最后更新：2026-07-19*
-*修订说明：v2.0 修复两个合规问题：① 授权 API 改用 token 而非明文 PAN，明确令牌化原则；② 新增 Installment/InstallmentSchedule 分期数据模型，补充分期相关 API。*
+*文档版本：v3.0 | 最后更新：2026-07-19*
+*修订说明：*
+- *v2.0：① 授权 API 改用 token 而非明文 PAN，明确令牌化原则；② 新增 Installment/InstallmentSchedule 分期数据模型*
+- *v3.0：① 补充分期退货业务逻辑（全额退货取消分期 + 释放 installment_used；部分退货按比例扣减 remaining_principal）；② 明确 Account.create 响应字段为 TSP 返回的 token（含格式说明），移除 masked_card_no 及相关推导逻辑；③ Installment.status 新增 CANCELLED 状态*
