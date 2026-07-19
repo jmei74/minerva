@@ -1,8 +1,8 @@
 # 信用卡核心系统 PRD 与技术方案
 
-**版本**: v1.0
+**版本**: v2.0
 **作者**: 小晶
-**日期**: 2025-05-31
+**日期**: 2025-05-31（v2.0 修订：2026-07-19）
 **状态**: 初稿
 
 ---
@@ -15,7 +15,7 @@
 - 支持高并发交易（目标 TPS ≥ 3000）
 - 账务数据零差错，事后对账偏差率 < 0.001%
 - 系统可用性 99.95%（年度停机 < 4.38 小时）
-- 满足 PCI-DSS 安全合规要求
+- 满足 PCI-DSS Level 1 合规要求
 
 ---
 
@@ -38,7 +38,7 @@
 | 消费 | 商户刷卡/插卡/挥卡，支持主扫、被扫 |
 | 取现 | 预借现金，收取手续费和利息 |
 | 还款 | 全额还款、部分还款、溢缴款还款 |
-| 分期 | 消费分期、账单分期 |
+| 分期 | 消费分期（3/6/12/24 期）、账单分期 |
 | 冲正/撤销 | 当日交易撤销，隔日冲正 |
 | 退货 | 退货交易，退款至账户 |
 
@@ -79,6 +79,7 @@
 │ - 开卡/销户   │  │ - 消费/还款   │  │ - 账单生成          │
 │ - 额度管理   │  │ - 授权处理   │  │ - 利息/滞纳金计算   │
 │ - 账户状态   │  │ - 冲正/退货   │  │ - 最低还款额计算    │
+│               │  │ - 分期管理   │  │                    │
 └─────────┬────┘  └───────┬───────┘  └────────┬────────────┘
           │               │                   │
 ┌─────────▼───────────────▼───────────────────▼──────────────┐
@@ -105,12 +106,13 @@
 |------|------|------|
 | account_id | UUID | 主键 |
 | customer_id | UUID | 客户ID（关联CRM） |
-| card_no | VARCHAR(20) | 卡号（加密存储） |
+| token_id | VARCHAR(50) | 卡号 token（由卡组织或 Tokenization Service 生成，替代明文 PAN） |
 | credit_limit | DECIMAL(15,2) | 固定额度 |
 | temp_limit | DECIMAL(15,2) | 临时额度 |
 | used_amount | DECIMAL(15,2) | 已使用金额 |
 | frozen_amount | DECIMAL(15,2) | 冻结金额（预授权） |
-| available_amount | DECIMAL(15,2) | 可用金额（计算字段） |
+| installment_used | DECIMAL(15,2) | 分期占用金额（本金未还部分） |
+| available_amount | DECIMAL(15,2) | 可用金额（计算字段，实时刷新） |
 | billing_day | INT | 账单日（1-31） |
 | due_day | INT | 到期还款日 |
 | status | ENUM | ACTIVE/FROZEN/CLOSED |
@@ -119,24 +121,30 @@
 | created_at | TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | 更新时间 |
 
+> **PCI-DSS 说明**：账户表中不存储明文卡号（PAN）。卡号 token 由卡组织（Visa Token Service / Mastercard DSP）或内部 Tokenization Service 生成，系统仅持有 token。PAN 与 token 的映射关系由 Token Vault 保管，PCI-DSS 范围外存储。
+
 #### Transaction（交易流水）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | txn_id | UUID | 主键 |
 | account_id | UUID | 账户ID |
-| txn_type | ENUM | PURCHASE/WITHDRAWAL/REFUND/REPAYMENT/REVERSAL |
-| txn_amount | DECIMAL(15,2) | 交易金额 |
+| installment_id | UUID | 分期ID（nullable，普通消费为空） |
+| txn_type | ENUM | PURCHASE/WITHDRAWAL/REFUND/REPAYMENT/REVERSAL/INSTALLMENT |
+| txn_amount | DECIMAL(15,2) | 交易原始金额 |
+| principal_amount | DECIMAL(15,2) | 本金（去除手续费后的实收金额） |
+| fee_amount | DECIMAL(15,2) | 手续费（取现/分期手续费） |
 | available_amount_before | DECIMAL(15,2) | 交易前可用额度 |
 | available_amount_after | DECIMAL(15,2) | 交易后可用额度 |
 | merchant_id | VARCHAR(50) | 商户ID |
 | merchant_name | VARCHAR(200) | 商户名称 |
+| merchant_category | VARCHAR(10) | MCC 商户类别码 |
 | terminal_id | VARCHAR(50) | 终端ID |
 | auth_code | VARCHAR(20) | 授权码（用于联机交易） |
 | reference_no | VARCHAR(50) | 参考号 |
 | txn_time | TIMESTAMP | 交易时间 |
 | settlement_date | DATE | 清算日期（可延后） |
-| status | ENUM | PENDING/COMPLETED/REVERSED |
+| status | ENUM | PENDING/COMPLETED/REVERSED/REFUNDED |
 | created_at | TIMESTAMP | 创建时间 |
 
 #### Bill（账单）
@@ -149,8 +157,9 @@
 | statement_date | DATE | 账单日 |
 | due_date | DATE | 到期还款日 |
 | opening_balance | DECIMAL(15,2) | 上期余额 |
-| total_purchase | DECIMAL(15,2) | 本期消费合计 |
+| total_purchase | DECIMAL(15,2) | 本期消费合计（含分期本金摊销） |
 | total_repayment | DECIMAL(15,2) | 本期还款合计 |
+| total_installment | DECIMAL(15,2) | 本期分期摊销本金 |
 | min_due | DECIMAL(15,2) | 最低还款额 |
 | statement_balance | DECIMAL(15,2) | 账单应还款额 |
 | interest | DECIMAL(15,2) | 利息 |
@@ -163,7 +172,7 @@
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | auth_id | UUID | 主键 |
-| account_id | UUID | 账户ID |
+| account_id | UUID | 账户ID（从 token 解析得到） |
 | auth_code | VARCHAR(20) | 授权码 |
 | auth_amount | DECIMAL(15,2) | 授权金额 |
 | auth_type | ENUM | PRE_AUTH/COMPLETION/CANCEL |
@@ -172,11 +181,50 @@
 | expire_time | TIMESTAMP | 过期时间（通常30天） |
 | created_at | TIMESTAMP | 创建时间 |
 
+#### Installment（分期计划）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| installment_id | UUID | 主键 |
+| account_id | UUID | 账户ID |
+| origin_txn_id | UUID | 触发分期的原始消费交易ID |
+| plan_type | ENUM | CONSUMPTION/BILL（消费分期/账单分期） |
+| tenure | INT | 期数（3/6/12/24） |
+| principal_amount | DECIMAL(15,2) | 分期本金 |
+| interest_rate | DECIMAL(6,4) | 月利率（如 0.0060 = 月息 0.6%） |
+| total_interest | DECIMAL(15,2) | 总利息 |
+| monthly_payment | DECIMAL(15,2) | 每期还款额（含本金+利息） |
+| remaining_principal | DECIMAL(15,2) | 剩余未还本金（随还款递减） |
+| installments_paid | INT | 已还期数 |
+| installments_remaining | INT | 剩余期数 |
+| first_due_date | DATE | 首次到期还款日 |
+| status | ENUM | ACTIVE/COMPLETED/EARLY_SETTLED/DEFAULTED |
+| start_date | DATE | 分期开始日期 |
+| created_at | TIMESTAMP | 创建时间 |
+
+#### InstallmentSchedule（分期还款计划）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| schedule_id | UUID | 主键 |
+| installment_id | UUID | 关联分期计划ID |
+| period_no | INT | 期次编号（1-based） |
+| due_date | DATE | 应还日期 |
+| principal_due | DECIMAL(15,2) | 当期应还本金 |
+| interest_due | DECIMAL(15,2) | 当期应还利息 |
+| total_due | DECIMAL(15,2) | 当期应还总额 |
+| principal_paid | DECIMAL(15,2) | 当期已还本金 |
+| interest_paid | DECIMAL(15,2) | 当期已还利息 |
+| total_paid | DECIMAL(15,2) | 当期已还总额 |
+| status | ENUM | PENDING/OVERDUE/PAID |
+| paid_date | DATE | 实际还款日期（nullable） |
+| created_at | TIMESTAMP | 创建时间 |
+
 ### 4.2 索引设计
 
 ```sql
--- 账户查询加速
-CREATE UNIQUE INDEX idx_account_card_no ON account(account_id, card_no(8));
+-- 按 token 查账户（授权链路关键路径）
+CREATE INDEX idx_account_token ON account(token_id);
 
 -- 按客户查账户
 CREATE INDEX idx_account_customer ON account(customer_id);
@@ -184,16 +232,33 @@ CREATE INDEX idx_account_customer ON account(customer_id);
 -- 交易流水查询（账户+时间范围）
 CREATE INDEX idx_txn_account_time ON transaction(account_id, txn_time DESC);
 
+-- 按分期查交易
+CREATE INDEX idx_txn_installment ON transaction(installment_id) WHERE installment_id IS NOT NULL;
+
 -- 账单查询
 CREATE UNIQUE INDEX idx_bill_account_month ON bill(account_id, bill_month);
 
--- 授权码唯一性（防重复）
+-- 授权码唯一性（防重复授权）
 CREATE UNIQUE INDEX idx_auth_code ON authorization(auth_code);
+
+-- 分期还款计划（按到期日查询催收）
+CREATE INDEX idx_installment_schedule_due ON installment_schedule(status, due_date)
+  WHERE status = 'OVERDUE';
 ```
 
 ---
 
 ## 5. API 接口概要设计
+
+### 5.0 令牌化（Tokenization）原则
+
+> **PCI-DSS 合规核心要求**：系统所有接口严禁传递或存储明文 PAN。所有外部调用方（收单机构、商户系统）必须通过卡组织 TSP（Token Service Provider）或内部 Tokenization Service 将 PAN 转换为 token，再提交至本系统。
+
+**Token 生命周期**：
+1. 持卡人在线上/线下支付时，收单机构调用卡组织 TSP，将 PAN 转为 token
+2. 商户系统携带 token 调用本系统授权接口
+3. 本系统通过 token 解析对应的 account_id，完成授权校验
+4. 所有日志、流水、响应中均使用 token，永不出现明文 PAN
 
 ### 5.1 账户管理
 
@@ -201,13 +266,13 @@ CREATE UNIQUE INDEX idx_auth_code ON authorization(auth_code);
 ```
 POST /api/v1/accounts
 Request: { "customer_id": "uuid", "credit_limit": 50000, "billing_day": 15 }
-Response: { "account_id": "uuid", "card_no": "**** **** **** 1234", "status": "ACTIVE" }
+Response: { "account_id": "uuid", "masked_card_no": "**** **** **** 1234", "status": "ACTIVE" }
 ```
 
 #### 查询账户
 ```
 GET /api/v1/accounts/{account_id}
-Response: { "account_id": "...", "credit_limit": 50000, "available_amount": 45000, ... }
+Response: { "account_id": "...", "credit_limit": 50000, "available_amount": 45000, "status": "ACTIVE" }
 ```
 
 #### 额度调整
@@ -226,24 +291,34 @@ Response: { "account_id": "...", "status": "FROZEN", "updated_at": "..." }
 
 ### 5.2 交易处理
 
-#### 消费授权（联机）
+#### 消费授权（联机）— 使用 token，不接受明文 PAN
 ```
 POST /api/v1/transactions/authorize
 Request: {
-  "card_no": "6288888888881234",
+  "token": "4592-xxxx-xxxx-1234",     ← 卡组织 TSP 生成的 token（必填）
   "amount": 500,
+  "currency": "CNY",
   "merchant_id": "M001",
+  "merchant_category": "5411",
   "terminal_id": "T001",
-  "txn_type": "PURCHASE"
+  "txn_type": "PURCHASE",
+  "channel": "POS"                     ← POS/APP/Web/Recurring
 }
 Response: {
   "auth_code": "A12345",
   "reference_no": "RN20250531001",
   "status": "APPROVED",
+  "account_id": "uuid",
   "available_amount": 44500
 }
-Error: { "code": "INSUFFICIENT_CREDIT", "message": "额度不足" }
+Error: {
+  "code": "INSUFFICIENT_CREDIT",
+  "message": "额度不足",
+  "available_amount": 200
+}
 ```
+
+> **安全说明**：`token` 字段由收单机构通过卡组织 TSP 接口获得，格式为 "NetworkToken"（如 Visa Token Service 的格式），本系统不接收明文 PAN。
 
 #### 消费确认（清算）
 ```
@@ -266,7 +341,61 @@ Request: { "amount": 500 }
 Response: { "refund_txn_id": "uuid", "status": "COMPLETED" }
 ```
 
-### 5.3 账单查询
+### 5.3 分期业务
+
+#### 申请分期
+```
+POST /api/v1/accounts/{account_id}/installments
+Request: {
+  "origin_txn_id": "uuid",        ← 消费分期：原始消费交易ID
+  "plan_type": "CONSUMPTION",    ← 或 BILL（账单分期）
+  "tenure": 12,                   ← 期数：3/6/12/24
+  "amount": 12000                 ← 分期本金（消费分期时与 origin_txn_id 关联；账单分期时为申请金额）
+}
+Response: {
+  "installment_id": "uuid",
+  "tenure": 12,
+  "monthly_payment": 1068.00,
+  "total_interest": 816.00,
+  "principal_amount": 12000.00,
+  "first_due_date": "2025-07-25",
+  "status": "ACTIVE"
+}
+```
+
+#### 查询分期计划
+```
+GET /api/v1/accounts/{account_id}/installments/{installment_id}
+Response: {
+  "installment_id": "uuid",
+  "plan_type": "CONSUMPTION",
+  "tenure": 12,
+  "principal_amount": 12000.00,
+  "monthly_payment": 1068.00,
+  "installments_paid": 3,
+  "installments_remaining": 9,
+  "remaining_principal": 9000.00,
+  "status": "ACTIVE",
+  "schedules": [
+    { "period_no": 4, "due_date": "2025-10-25", "total_due": 1068.00, "status": "PENDING" },
+    ...
+  ]
+}
+```
+
+#### 提前结清分期
+```
+POST /api/v1/accounts/{account_id}/installments/{installment_id}/early-settle
+Response: {
+  "installment_id": "uuid",
+  "remaining_principal": 9000.00,
+  "early_settlement_fee": 45.00,
+  "total_settlement_amount": 9045.00,
+  "status": "EARLY_SETTLED"
+}
+```
+
+### 5.4 账单查询
 
 ```
 GET /api/v1/accounts/{account_id}/bills?month=202505
@@ -274,19 +403,25 @@ Response: {
   "bill_id": "uuid",
   "bill_month": "202505",
   "statement_balance": 10000,
+  "total_purchase": 8500,
+  "total_installment": 1500,
   "min_due": 1000,
   "due_date": "2025-06-25",
   "status": "UNPAID",
-  "items": [...]
+  "items": [
+    { "txn_id": "uuid", "txn_type": "PURCHASE", "txn_amount": 500, "txn_date": "2025-05-10" },
+    { "txn_id": "uuid", "txn_type": "INSTALLMENT", "installment_id": "uuid", "principal": 125, "interest": 43, "txn_date": "2025-05-01" }
+  ]
 }
 ```
 
-### 5.4 批量接口
+### 5.5 批量接口
 
 | 接口 | 描述 | 说明 |
 |------|------|------|
-| POST /api/v1/batch/statements | 批量生成账单 | 定时任务触发 |
+| POST /api/v1/batch/statements | 批量生成账单 | 定时任务触发，含分期摊销计算 |
 | POST /api/v1/batch/interest | 批量计息 | 账单日后一天 |
+| POST /api/v1/batch/installment-amortize | 批量分期摊销 | 每日摊销分期本金，更新 account.used_amount |
 | GET /api/v1/reports/daily | 日终报表 | 下载 CSV/Excel |
 
 ---
@@ -297,11 +432,13 @@ Response: {
 
 | 需求 | 实现方案 |
 |------|----------|
-| 数据加密 | 卡号 AES-256 加密存储，传输全程 TLS 1.3 |
+| PAN 令牌化 | 外部系统通过卡组织 TSP 将 PAN 转为 token；系统只接收/存储 token，永不接触明文 PAN |
+| 数据加密 | 卡号 AES-256 加密存储（仅限 Token Vault 内部），传输全程 TLS 1.3 |
 | 访问控制 | API Gateway 做 Token 鉴权，服务间 mTLS |
-| 审计日志 | 所有写操作写入审计表，保留 7 年 |
-| PCI-DSS 合规 | 禁止日志中出现完整卡号（掩码展示） |
+| 审计日志 | 所有写操作写入审计表，保留 7 年；日志中 token 做掩码处理（保留前6后4） |
+| PCI-DSS Level 1 | 令牌化 + 掩码展示 + TSP 集成 + 密钥管理，满足 PCI-DSS v4.0 第 3.3/3.4/6.5 条 |
 | 密钥管理 | 使用 Vault 或云 KMS 管理密钥，密钥轮转 90 天 |
+| 渗透测试 | 上线前由第三方完成渗透测试，每年复测 |
 
 ### 6.2 并发与性能
 
@@ -309,12 +446,13 @@ Response: {
 |------|--------|
 | 授权接口 P99 | < 100ms |
 | 交易处理 TPS | ≥ 3000 |
+| 分期查询 P99 | < 300ms |
 | 批量账单生成 | 10 万账户 < 30 分钟 |
-| 账单查询 P99 | < 500ms |
+| 批量分期摊销 | 10 万分期 < 15 分钟 |
 | 额度快照缓存更新延迟 | < 5 秒 |
 
 **技术手段**：
-- 授权链路：Redis 缓存当前可用额度，避免每次查 DB
+- 授权链路：Redis 缓存当前可用额度 + token→account_id 映射，避免每次查 DB
 - 乐观锁更新：防止并发额度扣减导致超发
 - 连接池优化：HikariCP，核心链路 50 连接，批量 200 连接
 - 异步写流水：交易成功后先写 Kafka，消费端落库，平衡性能与一致性
@@ -370,13 +508,13 @@ Response: {
 - 冲正/撤销
 
 ### Phase 3（账单能力，第 5-6 月）
-- 账单生成
+- 账单生成（含分期摊销）
 - 最低还款额计算
 - 滞纳金与利息
 - 历史账单查询
 
 ### Phase 4（高级功能，第 7-8 月）
-- 分期业务
+- 分期业务（Installment + InstallmentSchedule 全套）
 - 预授权（酒店/租车）
 - 超额控制
 - 欺诈监控
@@ -387,6 +525,7 @@ Response: {
 
 | 风险 | 影响 | 缓解措施 |
 |------|------|----------|
+| Tokenization 依赖 | 卡组织 TSP 不可用时授权链路中断 | 与卡组织签订 SLA；本地做 token→account_id 缓存，TSP 恢复后同步 |
 | 额度计算复杂度 | 预授权+分期+临时额度交叉影响 | 先抽象模型，Phase 1 后再迭代 |
 | 对账压力 | 每日千万级流水对账 | T+1 对账任务分离，预留 4 小时窗口 |
 | 合规监管 | 利息/滞纳金计算规则可能调整 | 配置化实现，规则可热更新 |
@@ -394,4 +533,5 @@ Response: {
 
 ---
 
-*文档版本：v1.0 | 最后更新：2025-05-31*
+*文档版本：v2.0 | 最后更新：2026-07-19*
+*修订说明：v2.0 修复两个合规问题：① 授权 API 改用 token 而非明文 PAN，明确令牌化原则；② 新增 Installment/InstallmentSchedule 分期数据模型，补充分期相关 API。*
